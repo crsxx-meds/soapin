@@ -1,0 +1,305 @@
+/* =========================================================
+   RUANGINAP — THEME LAYER
+   Dimuat terakhir. Mengubah palet menjadi lebih berwarna
+   tanpa menyentuh visual.css. Ubah warna cukup di :root.
+   ========================================================= */
+
+:root{
+  --c-blue:#2563eb;
+  --c-teal:#0d9488;
+  --c-violet:#7c3aed;
+  --c-amber:#d97706;
+  --c-rose:#e11d48;
+  --c-sky:#0284c7;
+
+  --c-blue-soft:#e8f0ff;
+  --c-teal-soft:#dcf5f1;
+  --c-violet-soft:#f0e9ff;
+  --c-amber-soft:#fff1d6;
+  --c-rose-soft:#ffe4ea;
+  --c-sky-soft:#e0f2fe;
+
+  --blue:#2563eb;
+  --blue-dark:#1d4ed8;
+  --rd-blue:#2563eb;
+}
+
+/* ---------- Warna ruang (dipilih otomatis dari nama ruang) ---------- */
+.ward-chip{--wc:#2563eb;--wc-soft:#e8f0ff}
+.wc0{--wc:#2563eb;--wc-soft:#e8f0ff}
+.wc1{--wc:#0d9488;--wc-soft:#dcf5f1}
+.wc2{--wc:#7c3aed;--wc-soft:#f0e9ff}
+.wc3{--wc:#d97706;--wc-soft:#fff1d6}
+.wc4{--wc:#e11d48;--wc-soft:#ffe4ea}
+.wc5{--wc:#059669;--wc-soft:#d9f7e8}
+.wc6{--wc:#0284c7;--wc-soft:#e0f2fe}
+.wc7{--wc:#c026d3;--wc-soft:#fae8ff}
+.wc-none{--wc:#64748b;--wc-soft:#eef2f6}
+
+/* ---------- Topbar & navigasi ---------- */
+.topbar{
+  position:sticky;
+  border-bottom:0;
+  box-shadow:0 1px 0 var(--rd-line);
+}
+.topbar::after{
+  content:"";
+  position:absolute;
+  left:0;right:0;bottom:0;
+  height:3px;
+  background:linear-gradient(90deg,#2563eb,#0d9488 40%,#7c3aed 70%,#d97706);
+}
+
+.profile-avatar{
+  background:linear-gradient(135deg,#2563eb,#0d9488);
+  color:#fff;
+}
+
+.bottom-nav .nav-item[data-nav="patients"].active{color:#2563eb;background:#e8f0ff}
+.bottom-nav .nav-item[data-nav="tools"].active{color:#0d9488;background:#dcf5f1}
+.bottom-nav .nav-item[data-nav="templates"].active{color:#7c3aed;background:#f0e9ff}
+.bottom-nav .nav-item[data-nav="settings"].active{color:#d97706;background:#fff1d6}
+
+@media (max-width:759px){
+  .bottom-nav .nav-item[data-nav].active{background:transparent}
+}
+
+/* ---------- Tombol ---------- */
+.primary-btn{
+  background:linear-gradient(135deg,#2563eb,#0891b2);
+  border-color:transparent;
+}
+.primary-btn:hover{
+  background:linear-gradient(135deg,#1d4ed8,#0e7490);
+}
+.secondary-btn{
+  color:#1d4ed8;
+  border-color:#b9ccfb;
+}
+.secondary-btn:hover{background:#f3f7ff}
+
+.segment.active{
+  background:#fff;
+  color:#1d4ed8;
+  box-shadow:0 1px 3px rgba(37,99,235,.18);
+}
+
+#patientsView .page-head .eyebrow{color:#2563eb}
+#toolsView .page-head .eyebrow{color:#0d9488}
+#templatesView .page-head .eyebrow{color:#7c3aed}
+#formView .eyebrow{color:#d97706}
+
+/* ---------- Filter & grup ruang ---------- */
+.ward-filter{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+  margin:0 0 14px;
+}
+.ward-filter:empty{display:none}
+
+.ward-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  min-height:32px;
+  padding:5px 12px;
+  border-radius:999px;
+  border:1.5px solid var(--wc);
+  background:#fff;
+  color:var(--wc);
+  font-size:12px;
+  font-weight:750;
+}
+.ward-chip b{
+  font-size:11px;
+  padding:1px 7px;
+  border-radius:999px;
+  background:var(--wc-soft);
+}
+.ward-chip.active{
+  background:var(--wc);
+  color:#fff;
+}
+.ward-chip.active b{
+  background:rgba(255,255,255,.25);
+  color:#fff;
+}
+
+.ward-group-head{
+  grid-column:1/-1;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-top:6px;
+  padding:8px 13px;
+  border-radius:10px;
+  background:var(--wc);
+  color:#fff;
+}
+.ward-group-head:first-child{margin-top:0}
+.ward-group-head span{font-size:13px;font-weight:800;letter-spacing:.01em}
+.ward-group-head small{font-size:11px;font-weight:700;opacity:.9}
+
+/* ---------- Kartu pasien ---------- */
+#patientsView .patient-card[class*="wc"]{
+  border-left:4px solid var(--wc);
+  background:linear-gradient(90deg,var(--wc-soft) 0,#fff 42%);
+}
+
+.patient-ward{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:5px;
+  margin-top:7px;
+}
+.patient-dpjp{
+  margin-top:5px;
+  font-size:10px;
+  color:#667085;
+  font-weight:600;
+}
+
+.ward-badge,
+.hp-badge,
+.bal-badge{
+  display:inline-flex;
+  align-items:center;
+  padding:3px 8px;
+  border-radius:999px;
+  font-size:10px;
+  font-weight:800;
+  line-height:1.2;
+  white-space:nowrap;
+}
+.ward-badge{color:var(--wc);background:var(--wc-soft)}
+.hp-badge{color:#b45309;background:#fff1d6}
+.bal-badge.pos{color:#0369a1;background:#e0f2fe}
+.bal-badge.neg{color:#be123c;background:#ffe4ea}
+
+#patientsView .patient-status.is-active{background:#d9f7e8;color:#047857}
+#patientsView .patient-status.is-done{background:#e5e9f0;color:#475467}
+
+/* ---------- Form: warna per bagian SOAP ---------- */
+#formView .form-section[data-soap]{--sec:#2563eb;--sec-soft:#e8f0ff}
+#formView .form-section[data-soap="id"]{--sec:#0284c7;--sec-soft:#e0f2fe}
+#formView .form-section[data-soap="dx"]{--sec:#e11d48;--sec-soft:#ffe4ea}
+#formView .form-section[data-soap="s"] {--sec:#2563eb;--sec-soft:#e8f0ff}
+#formView .form-section[data-soap="o"] {--sec:#0d9488;--sec-soft:#dcf5f1}
+#formView .form-section[data-soap="a"] {--sec:#d97706;--sec-soft:#fff1d6}
+#formView .form-section[data-soap="p"] {--sec:#7c3aed;--sec-soft:#f0e9ff}
+
+#formView .form-section[data-soap] .section-heading{
+  background:var(--sec-soft);
+  box-shadow:inset 4px 0 0 var(--sec);
+  padding-left:15px;
+}
+#formView .form-section[data-soap] .section-heading h2{
+  color:var(--sec);
+  font-weight:800;
+}
+#formView .form-section[data-soap] .subheading{color:var(--sec)}
+
+.subheading-note{
+  font-weight:600;
+  text-transform:none;
+  letter-spacing:0;
+  color:#94a3b8;
+}
+
+#formView .ward-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px;
+}
+#formView .ward-grid .field{margin-bottom:0}
+#formView .ward-grid .field:nth-child(1),
+#formView .ward-grid .field:nth-child(4){grid-column:span 2}
+
+@media (max-width:640px){
+  #formView .ward-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+.visite-check{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  margin:4px 2px 12px;
+  font-size:13px;
+  font-weight:650;
+  color:#344054;
+}
+.visite-check input{
+  width:18px;
+  height:18px;
+  padding:0;
+  accent-color:#0d9488;
+}
+
+/* ---------- Detail pasien ---------- */
+.detail-ward{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px;
+  margin-bottom:8px;
+}
+.detail-ward .patient-dpjp{margin-top:0}
+
+#detailView .snapshot > div:nth-child(1){border-top:3px solid #2563eb}
+#detailView .snapshot > div:nth-child(2){border-top:3px solid #0d9488}
+#detailView .snapshot > div:nth-child(3){border-top:3px solid #7c3aed}
+#detailView .snapshot > div:nth-child(4){border-top:3px solid #d97706}
+
+.clinical-snapshot > div:nth-child(4n+2){border-top:3px solid #d97706}
+.clinical-snapshot > div:nth-child(4n+3){border-top:3px solid #0284c7}
+.clinical-snapshot > div:nth-child(4n+4){border-top:3px solid #e11d48}
+.clinical-snapshot > div:nth-child(4n+5){border-top:3px solid #7c3aed}
+
+.visite-list{display:grid;gap:8px}
+.visite-item{
+  border:1px solid var(--rd-line);
+  border-left:4px solid #0d9488;
+  border-radius:10px;
+  background:#fff;
+  padding:9px 12px;
+}
+.visite-item summary{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  cursor:pointer;
+  font-size:13px;
+  font-weight:750;
+  color:#134e4a;
+}
+.visite-item .output-box{margin:10px 0}
+.visite-item .secondary-btn{min-height:34px;font-size:12px}
+
+/* ---------- Kalkulator berwarna per kategori ---------- */
+#toolsView .calculator-card{--cc:#2563eb;--cc-soft:#e8f0ff;border-left:4px solid var(--cc)}
+#toolsView .calculator-card[data-cat="Hemodinamik"]{--cc:#e11d48;--cc-soft:#ffe4ea}
+#toolsView .calculator-card[data-cat="Antropometri"]{--cc:#0d9488;--cc-soft:#dcf5f1}
+#toolsView .calculator-card[data-cat="Elektrolit"]{--cc:#d97706;--cc-soft:#fff1d6}
+#toolsView .calculator-card[data-cat="Cairan"]{--cc:#0284c7;--cc-soft:#e0f2fe}
+#toolsView .calculator-card[data-cat="Ginjal"]{--cc:#7c3aed;--cc-soft:#f0e9ff}
+
+#toolsView .calculator-card .eyebrow{color:var(--cc)}
+
+#toolsView .calc-result{
+  min-height:34px;
+  padding:9px 11px;
+  font-size:12px;
+  line-height:1.45;
+  font-weight:750;
+  color:#1f2937;
+  background:var(--cc-soft);
+  border-color:transparent;
+}
+#toolsView .calc-result small{
+  font-size:11px;
+  font-weight:600;
+  color:#475467;
+}
