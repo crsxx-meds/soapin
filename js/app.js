@@ -1354,7 +1354,8 @@ function showView(name){
     'form',
     'detail',
     'tools',
-    'templates'
+    'templates',
+    'recap'
   ].forEach(
     v=>$(v+'View').hidden=v!==name
   );
@@ -3935,6 +3936,159 @@ function renderTools(){
   rows.forEach(
     t=>t.bind()
   );
+
+  fillToolsFromPatient();
+}
+
+function renderToolPatients(){
+  const sel=$('toolPatient');
+  if(!sel)return;
+
+  const cur=sel.value;
+
+  sel.innerHTML=
+    '<option value="">Isi dari pasien…</option>'+
+    state.patients
+      .filter(p=>p.status==='active')
+      .sort((a,b)=>
+        String(a.admission?.ward||'').localeCompare(
+          String(b.admission?.ward||''),'id',{numeric:true}))
+      .map(p=>`<option value="${p.id}">${esc(
+        (p.admission?.ward?p.admission.ward+' · ':'')+p.patient.name
+      )}</option>`)
+      .join('');
+
+  sel.value=cur;
+}
+
+function fillToolsFromPatient(){
+  const p=state.patients.find(
+    x=>x.id===$('toolPatient')?.value
+  );
+
+  if(!p)return;
+
+  const v=p.objective.vitals;
+  const f=p.objective.fluid||{};
+
+  const set=(id,val)=>{
+    const el=$(id);
+    if(!el||val==null||val==='')return;
+    el.value=val;
+    el.dispatchEvent(new Event('input',{bubbles:true}));
+  };
+
+  set('cMapSbp',v.sbp);set('cMapDbp',v.dbp);
+  set('cSiHr',v.hr);set('cSiSbp',v.sbp);
+  set('cBmiW',p.patient.weight);
+  set('cBsaW',p.patient.weight);
+  set('cFbIn',f.intake);set('cFbUrine',f.urine);
+  set('cFbOther',f.other);set('cFbBb',p.patient.weight);
+  set('cFbT',v.temperature);
+  set('cMtBb',p.patient.weight);
+  set('cRnAge',p.patient.age.years);
+  set('cRnSex',p.patient.gender);
+  set('cRnBb',p.patient.weight);
+  set('cIbwSex',p.patient.gender);
+}
+
+/* ---------- Rekap visite ---------- */
+function recapGroups(){
+  const cmp=(a,b)=>String(a).localeCompare(String(b),'id',{numeric:true});
+  const map=new Map();
+
+  state.patients
+    .filter(p=>p.status==='active')
+    .sort((a,b)=>
+      cmp(a.admission?.ward||'',b.admission?.ward||'')||
+      cmp(a.admission?.bed||'',b.admission?.bed||''))
+    .forEach(p=>{
+      const w=p.admission?.ward||'';
+      if(!map.has(w))map.set(w,[]);
+      map.get(w).push(p);
+    });
+
+  return map;
+}
+
+function ttvLine(p){
+  const v=p.objective.vitals;
+  const x=[];
+  if(v.sbp!=null&&v.dbp!=null)x.push(`TD ${v.sbp}/${v.dbp}`);
+  if(v.hr!=null)x.push(`HR ${v.hr}`);
+  if(v.rr!=null)x.push(`RR ${v.rr}`);
+  if(v.temperature!=null)x.push(`T ${v.temperature}`);
+  if(v.spo2!=null)x.push(`SpO₂ ${v.spo2}%`);
+  return x.join(', ');
+}
+
+function recapText(wardOnly=null){
+  const date=new Intl.DateTimeFormat('id-ID',{
+    weekday:'long',day:'numeric',month:'long',year:'numeric'
+  }).format(new Date());
+
+  const out=[`Rekap Visite — ${date}`];
+
+  recapGroups().forEach((list,w)=>{
+    if(wardOnly!==null&&w!==wardOnly)return;
+
+    out.push('',`== ${w||'Tanpa ruang'} (${list.length} pasien) ==`);
+
+    list.forEach(p=>{
+      const hp=hariRawat(p);
+      out.push(
+        `${p.admission?.bed?'Bed '+p.admission.bed+' — ':''}${p.patient.name}, ${ageText(p)}${hp!=null?` (HP ${hp})`:''}`,
+        `Dx: ${p.diagnosis.join('; ')||'-'}`
+      );
+      if(ttvLine(p))out.push(`TTV: ${ttvLine(p)}`);
+      if(fluidBalance(p)!=null)
+        out.push(`Balance: ${fluidBalance(p)>0?'+':''}${fluidBalance(p)} mL`);
+      if(clean(p.plan))out.push(`P: ${clean(p.plan).replace(/\n+/g,'; ')}`);
+      out.push('');
+    });
+  });
+
+  return out.join('\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+
+function renderRecap(){
+  const groups=recapGroups();
+  const c=$('recapList');
+
+  if(!groups.size){
+    c.innerHTML='<div class="empty"><strong>Belum ada pasien dirawat</strong>Rekap muncul setelah ada pasien aktif.</div>';
+    return;
+  }
+
+  c.innerHTML=[...groups.entries()].map(([w,list])=>`
+    <section class="recap-ward ${wardClass(w)}">
+      <div class="ward-group-head ${wardClass(w)}">
+        <span>${esc(w||'Tanpa ruang')}</span>
+        <small>${list.length} pasien</small>
+        <button type="button" class="recap-copy" data-recap-ward="${esc(w)}">Copy ruang</button>
+      </div>
+      <div class="recap-table">
+        ${list.map(p=>{
+          const hp=hariRawat(p);
+          const bal=fluidBalance(p);
+          return`
+            <article class="recap-row" data-open-patient="${p.id}">
+              <div class="recap-bed">${esc(p.admission?.bed||'—')}</div>
+              <div class="recap-main">
+                <div class="recap-name">${esc(p.patient.name)}
+                  <small>${esc(ageText(p))}${p.patient.gender?' · '+esc(p.patient.gender):''}</small>
+                  ${hp!=null?`<span class="hp-badge">HP ${hp}</span>`:''}
+                  ${bal!=null?`<span class="bal-badge ${bal<0?'neg':'pos'}">${bal>0?'+':''}${bal} mL</span>`:''}
+                </div>
+                <div class="recap-dx">${esc(p.diagnosis.join(' • ')||'Belum ada diagnosis')}</div>
+                ${ttvLine(p)?`<div class="recap-ttv">${esc(ttvLine(p))}</div>`:''}
+                ${clean(p.plan)?`<div class="recap-plan"><b>P</b> ${esc(clean(p.plan).replace(/\n+/g,'; '))}</div>`:''}
+              </div>
+            </article>`;
+        }).join('')}
+      </div>
+    </section>
+  `).join('');
 }
 
 async function ensureDefaultTemplate(){
@@ -4185,6 +4339,7 @@ async function refreshPatients(){
 
   renderList();
   refreshWardList();
+  renderToolPatients();
 }
 
 async function saveProfile(){
@@ -4528,9 +4683,16 @@ function bind(){
               renderTools();
               showView('tools');
 
+            }else if(n==='recap'){
+              renderRecap();
+              showView('recap');
+
             }else if(n==='templates'){
               renderTemplates();
               showView('templates');
+
+            }else if(n==='settings'){
+              openSettings();
 
             }else{
               toast(
@@ -4753,6 +4915,29 @@ function bind(){
 
   $('toolSearch').oninput=
     renderTools;
+
+  $('toolPatient').onchange=
+    renderTools;
+
+  $('copyRecapBtn').onclick=
+    ()=>copyText(recapText(),'Rekap tersalin');
+
+  $('recapList').onclick=
+    e=>{
+      const cp=e.target.closest('[data-recap-ward]');
+
+      if(cp){
+        copyText(
+          recapText(cp.dataset.recapWard),
+          'Rekap ruang tersalin'
+        );
+        return;
+      }
+
+      const row=e.target.closest('[data-open-patient]');
+
+      if(row)openDetail(row.dataset.openPatient);
+    };
 
   $('newTemplateBtn').onclick=
     ()=>openTemplateEditor();
