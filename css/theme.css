@@ -56,6 +56,7 @@
 }
 
 .bottom-nav .nav-item[data-nav="patients"].active{color:#2563eb;background:#e8f0ff}
+.bottom-nav .nav-item[data-nav="recap"].active{color:#e11d48;background:#ffe4ea}
 .bottom-nav .nav-item[data-nav="tools"].active{color:#0d9488;background:#dcf5f1}
 .bottom-nav .nav-item[data-nav="templates"].active{color:#7c3aed;background:#f0e9ff}
 .bottom-nav .nav-item[data-nav="settings"].active{color:#d97706;background:#fff1d6}
@@ -303,3 +304,64 @@
   font-weight:600;
   color:#475467;
 }
+
+/* ---------- Kalkulator: isi dari pasien ---------- */
+.tool-patient{
+  margin:0 0 10px;
+  border-color:#99d8d0;
+  background:#f1fbf9;
+  font-weight:650;
+}
+
+/* ---------- Rekap ruang ---------- */
+#recapView .page-head .eyebrow{color:#e11d48}
+.recap-list{display:grid;gap:14px}
+.recap-ward .ward-group-head{border-radius:10px 10px 0 0;margin-top:0}
+.recap-copy{
+  margin-left:auto;
+  border:1px solid rgba(255,255,255,.55);
+  background:rgba(255,255,255,.18);
+  color:#fff;
+  border-radius:8px;
+  padding:4px 10px;
+  font-size:11px;
+  font-weight:750;
+}
+.recap-table{
+  background:#fff;
+  border:1px solid var(--rd-line);
+  border-top:0;
+  border-radius:0 0 10px 10px;
+}
+.recap-row{
+  display:flex;
+  gap:12px;
+  padding:11px 13px;
+  border-bottom:1px solid #edf0f4;
+  cursor:pointer;
+}
+.recap-row:last-child{border-bottom:0}
+.recap-row:hover{background:var(--wc-soft)}
+.recap-bed{
+  flex:0 0 42px;
+  height:42px;
+  display:grid;
+  place-items:center;
+  border-radius:10px;
+  background:var(--wc-soft);
+  color:var(--wc);
+  font-weight:800;
+  font-size:13px;
+}
+.recap-main{min-width:0;flex:1}
+.recap-name{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-weight:800;font-size:14px}
+.recap-name small{font-weight:600;color:#667085;font-size:11px}
+.recap-dx{margin-top:3px;font-size:12px;color:#344054}
+.recap-ttv{margin-top:3px;font-size:11px;color:#0f766e;font-weight:650}
+.recap-plan{margin-top:3px;font-size:11px;color:#5b21b6}
+.recap-plan b{background:#f0e9ff;border-radius:4px;padding:0 5px;margin-right:4px}
+
+/* ---------- Perbaikan tata letak ---------- */
+#toolsView .calc-result{display:block}
+#toolsView .calc-result small{display:block;margin-top:2px}
+#patientsView .patient-name{white-space:normal;overflow:visible;text-overflow:clip}
