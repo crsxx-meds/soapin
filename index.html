@@ -232,8 +232,14 @@
 
       <section id="toolsView" class="view" hidden>
         <div class="page-head"><div><p class="eyebrow">Clinical tools</p><h1>Kalkulator</h1></div></div>
+        <select id="toolPatient" class="tool-patient" aria-label="Isi dari pasien"></select>
         <label class="search-box"><span>⌕</span><input id="toolSearch" type="search" placeholder="Cari tools..." autocomplete="off"></label>
         <div id="toolsList" class="tools-list"></div>
+      </section>
+
+      <section id="recapView" class="view" hidden>
+        <div class="page-head"><div><p class="eyebrow">Visite</p><h1>Rekap Ruang</h1></div><button id="copyRecapBtn" class="primary-btn">Copy Rekap</button></div>
+        <div id="recapList" class="recap-list"></div>
       </section>
 
       <section id="templatesView" class="view" hidden>
@@ -262,6 +268,7 @@
       <div class="sidebar-links">
         <button class="nav-item active" data-nav="patients"><span>▣</span><small>Pasien</small></button>
         <button class="nav-item" data-nav="tools"><span>⌁</span><small>Kalkulator</small></button>
+        <button class="nav-item" data-nav="recap"><span>☰</span><small>Rekap</small></button>
         <button class="nav-item" data-nav="templates"><span>▤</span><small>Template</small></button>
         <button class="nav-item" data-nav="settings"><span>⚙</span><small>Pengaturan</small></button>
       </div>

@@ -12,6 +12,7 @@ Diadaptasi dari struktur ruangdokter.github.io (repo asalnya belum mencantumkan 
 - Riwayat visite harian per pasien (centang saat menyimpan)
 - Status: Dirawat / Pulang (KRS)
 - Kalkulator tambahan: Balance cairan, Cairan rumatan, Fungsi ginjal (CKD-EPI 2021 + Cockcroft-Gault), Osmolalitas, Berat badan ideal, Anion gap koreksi albumin
+- Halaman Rekap per ruang (Copy Rekap / Copy ruang) dan kalkulator "Isi dari pasien"
 - Tema warna di `css/theme.css`; logo sementara di `assets/logo.svg`
 
 ## Menjalankan
