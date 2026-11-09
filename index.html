@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="description" content="Clinical workspace offline-first untuk visite dan SOAP rawat inap.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/visual.css">
+  <link rel="stylesheet" href="css/theme.css">
+  <title>RuangInap</title>
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <header class="topbar">
+      <a class="brand-wrap brand-link" href="#" aria-label="RuangInap">
+        <img
+          class="brand-logo"
+          src="assets/logo.svg"
+          alt="RuangInap"
+          width="150"
+          height="42"
+        >
+      </a>
+      <button id="profileBtn" class="profile-button" type="button" aria-label="Profil kerja"><span class="profile-avatar">DR</span><span class="profile-meta"><strong id="profileDoctorLabel">Profil kerja</strong><small id="profileUnitLabel">Atur profil</small></span><span aria-hidden="true">⌄</span></button>
+    </header>
+
+    <main>
+      <section id="patientsView" class="view active-view">
+        <div class="page-head">
+          <div>
+            <p class="eyebrow">Rawat inap</p>
+            <h1>Pasien Rawat Inap</h1>
+          </div>
+          <button id="newPatientBtn" class="primary-btn">＋ Pasien Baru</button>
+        </div>
+
+        <div class="search-row">
+          <label class="search-box">
+            <span>⌕</span>
+            <input id="patientSearch" type="search" placeholder="Cari nama, diagnosis, ruang, DPJP..." autocomplete="off">
+          </label>
+          <div class="segmented" role="tablist" aria-label="Daftar pasien">
+            <button class="segment active" data-list="active">Dirawat <span id="activeCount">0</span></button>
+            <button class="segment" data-list="archive">Pulang <span id="archiveCount">0</span></button>
+          </div>
+        </div>
+
+        <div id="wardFilter" class="ward-filter"></div>
+
+        <div id="patientList" class="patient-list"></div>
+      </section>
+
+      <section id="formView" class="view" hidden>
+        <div class="page-head compact">
+          <div class="back-title">
+            <button id="backToPatients" class="icon-btn">←</button>
+            <div>
+              <p class="eyebrow">Visite</p>
+              <h1 id="formTitle">Pasien Baru</h1>
+            </div>
+          </div>
+        </div>
+
+        <form id="patientForm" novalidate>
+          <input id="patientId" type="hidden">
+
+          <section class="form-section" data-soap="id">
+            <div class="section-heading">
+              <h2>Identitas</h2>
+            </div>
+
+            <div class="identity-grid">
+              <div class="field">
+                <label for="patientName">Nama pasien <span>*</span></label>
+                <input id="patientName" required autocomplete="off" placeholder="Nama lengkap">
+              </div>
+
+              <div class="field">
+                <label for="gender">Jenis kelamin <span>*</span></label>
+                <select id="gender" required>
+                  <option value="">Pilih</option>
+                  <option value="L">Laki-laki</option>
+                  <option value="P">Perempuan</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="ageYears">Usia (tahun) <span>*</span></label>
+                <input id="ageYears" type="number" min="0" max="120" inputmode="numeric" required placeholder="Usia">
+              </div>
+            </div>
+
+            <div id="pediatricFields" class="pediatric-fields" hidden>
+              <div class="callout">
+                Mode pediatrik aktif — usia dapat dirinci bila diperlukan.
+              </div>
+
+              <div class="two-col">
+                <div class="field">
+                  <label for="ageMonths">Bulan</label>
+                  <input id="ageMonths" type="number" min="0" max="11" inputmode="numeric">
+                </div>
+
+                <div class="field">
+                  <label for="ageDays">Hari</label>
+                  <input id="ageDays" type="number" min="0" max="30" inputmode="numeric">
+                </div>
+              </div>
+            </div>
+
+            <div class="subheading">Data rawat inap</div>
+            <div class="ward-grid">
+              <div class="field">
+                <label for="ward">Ruang rawat <span>*</span></label>
+                <input id="ward" list="wardOptions" autocomplete="off" placeholder="mis. Melati">
+                <datalist id="wardOptions"></datalist>
+              </div>
+
+              <div class="field">
+                <label for="bed">Bed</label>
+                <input id="bed" autocomplete="off" placeholder="mis. 3A">
+              </div>
+
+              <div class="field">
+                <label for="admitDate">Tanggal MRS</label>
+                <input id="admitDate" type="date">
+              </div>
+
+              <div class="field">
+                <label for="dpjp">DPJP</label>
+                <input id="dpjp" autocomplete="off" placeholder="Nama DPJP">
+              </div>
+
+              <div class="field">
+                <label for="weight">BB (kg)</label>
+                <input id="weight" type="number" min="0" step="0.1" inputmode="decimal">
+              </div>
+            </div>
+          </section>
+
+          <section class="form-section" data-soap="dx">
+            <div class="section-heading"><h2>Diagnosis</h2></div>
+            <div class="field"><label for="diagnosis">Diagnosis utama <span>*</span></label><textarea id="diagnosis" rows="2"></textarea></div>
+          </section>
+
+          <section class="form-section" data-soap="s">
+            <div class="section-heading"><h2>S — Subjective</h2></div>
+            <div class="field"><textarea id="subjective" rows="4" placeholder="Keluhan hari ini, perkembangan sejak kemarin, dll."></textarea></div>
+          </section>
+
+          <section class="form-section" data-soap="o">
+            <div class="section-heading"><h2>O — Objective</h2></div>
+            <div class="subheading">GCS</div>
+            <div class="three-col gcs-grid">
+              <div class="field"><label for="gcsE">E</label><input id="gcsE" type="number" min="1" max="4" inputmode="numeric"></div>
+              <div class="field"><label for="gcsV">V</label><input id="gcsV" type="number" min="1" max="5" inputmode="numeric"></div>
+              <div class="field"><label for="gcsM">M</label><input id="gcsM" type="number" min="1" max="6" inputmode="numeric"></div>
+            </div>
+
+            <div class="subheading">Tanda vital</div>
+            <div class="two-col">
+              <div class="field"><label>TD</label><div class="bp-input"><input id="sbp" type="number" inputmode="numeric" placeholder="SBP"><span>/</span><input id="dbp" type="number" inputmode="numeric" placeholder="DBP"></div></div>
+              <div class="field"><label for="hr">HR (/min)</label><input id="hr" type="number" inputmode="numeric"></div>
+              <div class="field"><label for="rr">RR (/min)</label><input id="rr" type="number" inputmode="numeric"></div>
+              <div class="field"><label for="temperature">T (°C)</label><input id="temperature" type="number" step="0.1" inputmode="decimal"></div>
+              <div class="field"><label for="spo2">SpO₂ (%)</label><input id="spo2" type="number" min="0" max="100" inputmode="numeric"></div>
+              <div class="field"><label for="oxygen">O₂</label><select id="oxygen"><option value="Room air">Room air</option><option value="Nasal cannula">Nasal cannula</option><option value="Simple mask">Simple mask</option><option value="NRM">NRM</option><option value="HFNC">HFNC</option><option value="Lainnya">Lainnya</option></select></div><div id="oxygenFlowWrap" class="field" hidden><label for="oxygenFlow">Flow O₂ (L/menit)</label><input id="oxygenFlow" type="number" min="0" step="0.1" inputmode="decimal" placeholder="mis. 3"></div>
+            </div>
+            <div id="clinicalAutoTools" class="clinical-auto-tools" hidden></div>
+
+            <div class="subheading">Balance cairan 24 jam <span class="subheading-note">(opsional)</span></div>
+            <div class="three-col">
+              <div class="field"><label for="fluidIn">Intake (mL)</label><input id="fluidIn" type="number" min="0" inputmode="numeric"></div>
+              <div class="field"><label for="fluidUrine">Urin (mL)</label><input id="fluidUrine" type="number" min="0" inputmode="numeric"></div>
+              <div class="field"><label for="fluidOther">Output lain (mL)</label><input id="fluidOther" type="number" min="0" inputmode="numeric"></div>
+            </div>
+            <p class="helper">IWL dihitung otomatis untuk pasien dewasa bila BB diisi (15 mL/kgBB/hari, +200 mL per °C di atas 37).</p>
+
+            <div class="subheading row-between"><span>Pemeriksaan fisik</span><button type="button" id="physicalHelper" class="secondary-btn small-btn">＋ Temuan</button></div>
+            <div class="physical-grid">
+              <div class="field"><label for="headExam">Kepala</label><input id="headExam" value="CA -/-, SI -/-"></div>
+              <div class="field"><label for="thoraxExam">Thorax</label><input id="thoraxExam" value="ves +/+, rh -/-, wh -/-. BJ reg, m -, g -."></div>
+              <div class="field"><label for="abdomenExam">Abdomen</label><input id="abdomenExam" value="supel, BU +"></div>
+              <div class="field"><label for="extremityExam">Ekstremitas</label><input id="extremityExam" value="akral hangat, CRT <2s"></div>
+              <div class="field full"><label for="otherExam">Lainnya</label><textarea id="otherExam" rows="2"></textarea></div>
+            </div>
+          </section>
+
+          <section class="form-section" data-soap="a">
+            <div class="section-heading"><h2>A — Assessment</h2></div>
+            <div class="field"><textarea id="assessment" rows="3" placeholder="Perkembangan, problem list, mis. 1. Pneumonia — membaik. Kosongkan untuk memakai diagnosis."></textarea></div>
+          </section>
+
+          <section class="form-section" data-soap="p">
+            <div class="section-heading"><h2>P — Plan</h2></div>
+            <div class="field"><textarea id="plan" rows="4" placeholder="Terapi / rencana..."></textarea></div>
+          </section>
+
+          <section class="output-section">
+            <div class="row-between preview-head"><div><p class="eyebrow">Preview</p><h2>Format SOAP</h2></div><div class="preview-actions"><select id="formTemplateSelect" class="consult-select" aria-label="Template output"></select><button type="button" id="copyFormBtn" class="secondary-btn">Copy SOAP</button></div></div>
+            <pre id="formPreview" class="output-box"></pre>
+            <div class="copy-grid">
+              <button type="button" data-copy-section="all" class="primary-btn">Copy All</button>
+              <button type="button" data-copy-section="s" class="secondary-btn">Copy S</button>
+              <button type="button" data-copy-section="o" class="secondary-btn">Copy O</button>
+              <button type="button" data-copy-section="a" class="secondary-btn">Copy A</button>
+              <button type="button" data-copy-section="p" class="secondary-btn">Copy P</button>
+            </div>
+          </section>
+
+          <label class="visite-check"><input id="saveVisite" type="checkbox" checked> Simpan ke riwayat visite hari ini</label>
+
+          <div class="form-save-bar"><button type="submit" id="savePatientBtn" class="primary-btn">Simpan pasien</button><button type="button" id="cancelFormBtn" class="secondary-btn">Batal</button></div>
+        </form>
+      </section>
+
+      <section id="detailView" class="view" hidden>
+        <div class="page-head compact">
+          <div class="back-title">
+            <button id="backFromDetail" class="icon-btn">←</button>
+            <div><p class="eyebrow">Patient case</p><h1 id="detailTitle">Pasien</h1></div>
+          </div>
+          <button id="detailCopyBtn" class="primary-btn">Copy SOAP</button>
+        </div>
+        <div id="detailContent"></div>
+      </section>
+
+      <section id="toolsView" class="view" hidden>
+        <div class="page-head"><div><p class="eyebrow">Clinical tools</p><h1>Kalkulator</h1></div></div>
+        <label class="search-box"><span>⌕</span><input id="toolSearch" type="search" placeholder="Cari tools..." autocomplete="off"></label>
+        <div id="toolsList" class="tools-list"></div>
+      </section>
+
+      <section id="templatesView" class="view" hidden>
+        <div class="page-head"><div><p class="eyebrow">Output</p><h1>Template</h1></div><button id="newTemplateBtn" class="primary-btn">＋ Template</button></div>
+        <div id="templateList" class="template-list"></div>
+        <div id="templateEditor" class="form-section" hidden>
+          <div class="row-between"><h2 id="templateEditorTitle">Template baru</h2><button id="closeTemplateEditor" class="icon-btn">×</button></div>
+          <div class="field"><label for="templateName">Nama template</label><input id="templateName"></div>
+          <div class="field"><label for="templateBody">Isi template</label><textarea id="templateBody" rows="14"></textarea></div>
+          <div class="field"><label>Field cepat</label><div id="templateFields" class="field-chips"></div></div>
+          <button id="saveTemplateBtn" class="primary-btn">Simpan template</button>
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Navigasi utama">
+      <div class="sidebar-brand">
+        <img
+          src="assets/logo.svg"
+          alt="RuangInap"
+          width="150"
+          height="42"
+        >
+        <span>Clinical workspace</span>
+      </div>
+      <div class="sidebar-links">
+        <button class="nav-item active" data-nav="patients"><span>▣</span><small>Pasien</small></button>
+        <button class="nav-item" data-nav="tools"><span>⌁</span><small>Kalkulator</small></button>
+        <button class="nav-item" data-nav="templates"><span>▤</span><small>Template</small></button>
+        <button class="nav-item" data-nav="settings"><span>⚙</span><small>Pengaturan</small></button>
+      </div>
+      <div class="sidebar-footer">
+        <span>Untuk visite rawat inap</span>
+      </div>
+    </nav>
+  </div>
+
+  <div id="updateModal" class="modal" hidden>
+    <div class="modal-card update-card">
+      <div class="modal-head"><div><p class="eyebrow">Patient update</p><h2 id="updateModalTitle">＋ Update</h2></div><button class="icon-btn" data-close="updateModal">×</button></div>
+      <div class="update-tabs" role="tablist">
+        <button class="update-tab active" data-update-type="vitals">TTV</button>
+        <button class="update-tab" data-update-type="plan">Terapi / Plan</button>
+        <button class="update-tab" data-update-type="lab">Lab / Penunjang</button>
+        <button class="update-tab" data-update-type="note">Catatan</button>
+      </div>
+      <div id="updateFields"></div>
+      <div class="modal-actions"><button id="saveUpdateBtn" class="primary-btn">Simpan Update</button></div>
+    </div>
+  </div>
+
+  <div id="consultModal" class="modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head"><div><p class="eyebrow">Tracking</p><h2>+ Konsul</h2></div><button class="icon-btn" data-close="consultModal">×</button></div>
+      <div id="consultRows"></div>
+      <div class="modal-actions"><button id="addSpecialtyBtn" class="secondary-btn">＋ Tambah spesialis</button><button id="saveConsultBtn" class="primary-btn">Simpan</button></div>
+      <p class="helper">Advice tetap dicatat di ERM. Di sini hanya ditandai apakah advice sudah ada.</p>
+    </div>
+  </div>
+
+  <div id="physicalModal" class="modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head"><div><p class="eyebrow">Pemeriksaan fisik</p><h2>Tambah temuan</h2></div><button class="icon-btn" data-close="physicalModal">×</button></div>
+      <div id="physicalSectionTabs" class="segmented physical-tabs"></div>
+      <div id="physicalOptions" class="finding-grid"></div>
+      <div class="modal-actions"><button class="primary-btn" data-close="physicalModal">Selesai</button></div>
+      <p class="helper">Pilih temuan untuk menambahkannya ke pemeriksaan. Detail tetap bisa diedit manual di field pemeriksaan fisik.</p>
+    </div>
+  </div>
+
+  <div id="settingsModal" class="modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head"><div><p class="eyebrow">Profil kerja</p><h2>Pengaturan</h2></div><button class="icon-btn" data-close="settingsModal">×</button></div>
+      <div class="field"><label for="doctorName">Nama dokter</label><input id="doctorName"></div>
+      <div class="two-col"><div class="field"><label for="hospital">Rumah sakit</label><input id="hospital"></div><div class="field"><label for="unit">Unit</label><input id="unit"></div></div>
+      <div class="field"><label for="wardsList">Daftar ruang rawat inap</label><textarea id="wardsList" rows="4" placeholder="Satu ruang per baris, mis.&#10;Melati&#10;Mawar&#10;ICU"></textarea><p class="helper">Muncul sebagai saran saat mengisi ruang rawat pasien.</p></div>
+      <div class="modal-actions"><button id="saveSettingsBtn" class="primary-btn">Simpan</button></div>
+      <div class="divider"></div>
+      <div class="row-between"><div><strong>Data lokal</strong><div class="helper">Pasien tersimpan di perangkat ini.</div></div><button id="exportBtn" class="secondary-btn">Backup</button></div>
+      <input id="importInput" type="file" accept="application/json" hidden>
+      <button id="importBtn" class="text-btn">Restore dari JSON</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="js/app.js" defer></script>
+</body>
+</html>
