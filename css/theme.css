@@ -365,3 +365,79 @@
 #toolsView .calc-result{display:block}
 #toolsView .calc-result small{display:block;margin-top:2px}
 #patientsView .patient-name{white-space:normal;overflow:visible;text-overflow:clip}
+
+/* ===== v4: DPJP filter ===== */
+.dpjp-filter{display:flex;align-items:center;gap:10px;margin:0 0 12px}
+.dpjp-filter[hidden]{display:none}
+.dpjp-filter label{font-size:12px;font-weight:800;letter-spacing:.06em;color:var(--muted,#64748b);text-transform:uppercase}
+.dpjp-filter select{flex:1;min-height:42px;padding:0 12px;border-radius:12px;border:1.5px solid #c7d2fe;background:#eef2ff;font-weight:700;color:#3730a3}
+
+/* ===== v4: kartu pasien (pcard) ===== */
+.pcard{--wc:#2563eb;--wc-soft:#eff6ff;position:relative;display:block;margin:0 0 12px;padding:14px 14px 12px;background:#fff;border:1px solid #e2e8f0;border-left:6px solid var(--wc);border-radius:16px;box-shadow:0 2px 8px rgba(15,23,42,.06);cursor:pointer}
+.pcard:active{transform:scale(.995)}
+.pc-main{display:flex;align-items:center;gap:12px}
+.pc-bed{flex:none;min-width:54px;padding:6px 8px;border-radius:12px;background:var(--wc);color:#fff;text-align:center;font-weight:800;font-size:18px;line-height:1.1}
+.pc-bed small{display:block;font-size:9px;letter-spacing:.12em;opacity:.85;font-weight:700}
+.pc-id{flex:1;min-width:0}
+.pc-name{margin:0;font-size:20px;line-height:1.2;font-weight:800;color:#0f172a;white-space:normal;overflow-wrap:anywhere}
+.pc-meta{margin-top:2px;font-size:13px;color:#64748b}
+.pc-status{flex:none;align-self:flex-start;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:800}
+.pc-status.is-active{background:#dcfce7;color:#166534}
+.pc-status.is-done{background:#e2e8f0;color:#475569}
+.pc-dx{display:flex;gap:10px;align-items:flex-start;margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--wc-soft);border-left:4px solid var(--wc)}
+.pc-dx-label{flex:none;font-size:11px;font-weight:900;letter-spacing:.08em;color:var(--wc);padding-top:3px}
+.pc-dx-text{font-size:16px;line-height:1.35;font-weight:700;color:#1e293b;overflow-wrap:anywhere}
+.pc-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.dpjp-tag{padding:3px 9px;border-radius:999px;background:#ede9fe;color:#5b21b6;font-size:12px;font-weight:700}
+.pc-consult{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin-top:8px}
+.pc-consult-label{font-size:10px;font-weight:800;letter-spacing:.1em;color:#94a3b8}
+.pc-chip{padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700}
+.pc-chip.ok{background:#dcfce7;color:#166534}
+.pc-chip.wait{background:#fef3c7;color:#92400e}
+.pc-chip i{font-style:normal;opacity:.8}
+.pc-foot{margin-top:10px;padding-top:10px;border-top:1px dashed #e2e8f0}
+.pc-times{display:block;font-size:12px;color:#94a3b8;margin-bottom:8px}
+.pc-actions{display:flex;flex-wrap:wrap;gap:6px}
+.pc-actions button{min-height:36px;padding:0 12px;font-size:13px}
+
+/* ===== v4: form penunjang ===== */
+.subheading-note{font-weight:500;color:#94a3b8;font-size:12px}
+.pn-group{margin:10px 0;border:1.5px solid #fde68a;border-radius:14px;background:#fffbeb;overflow:hidden}
+.pn-group summary{display:flex;flex-direction:column;gap:2px;padding:12px 14px;cursor:pointer;list-style:none}
+.pn-group summary::-webkit-details-marker{display:none}
+.pn-title{font-weight:800;color:#92400e}
+.pn-hint{font-size:12px;color:#a16207}
+.pn-group[open] summary{border-bottom:1px solid #fde68a}
+.pn-body{padding:12px 14px 14px}
+.pn-label{margin:12px 0 6px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#a16207}
+.pn-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.pn-grid-3{grid-template-columns:repeat(3,1fr)}
+.pn-other{margin-top:12px}
+@media(min-width:700px){.pn-grid{grid-template-columns:repeat(3,1fr)}}
+
+/* ===== v4: CPPT timeline ===== */
+.cppt-count{font-size:12px;color:#64748b;font-weight:700}
+.cppt{position:relative;margin-top:8px;padding-left:4px}
+.cppt::before{content:"";position:absolute;left:11px;top:8px;bottom:8px;width:3px;border-radius:3px;background:linear-gradient(#93c5fd,#c4b5fd)}
+.cppt-item{position:relative;display:flex;gap:14px;padding:0 0 16px}
+.cppt-dot{flex:none;width:16px;height:16px;margin-top:4px;border-radius:50%;background:#fff;border:3px solid #94a3b8;z-index:1}
+.cppt-item.has-soap .cppt-dot{border-color:#2563eb;background:#2563eb}
+.cppt-item.is-today .cppt-dot{box-shadow:0 0 0 4px #bfdbfe}
+.cppt-todo .cppt-dot{border:3px dashed #f59e0b;background:#fff}
+.cppt-body{flex:1;min-width:0}
+.cppt-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.cppt-date{font-weight:800;color:#0f172a}
+.cppt-today{padding:2px 8px;border-radius:999px;background:#dbeafe;color:#1d4ed8;font-size:11px;font-weight:800}
+.cppt-empty{margin:6px 0 8px;color:#a16207;font-size:14px}
+.cppt-events{margin:8px 0 0;padding:0;list-style:none;display:grid;gap:4px}
+.cppt-events li{display:flex;flex-wrap:wrap;gap:6px;align-items:baseline;font-size:13px;color:#475569}
+.cppt-events li b{color:#334155}
+.cppt-events li small{color:#94a3b8}
+.cppt-soap{margin-top:8px;border:1.5px solid #bfdbfe;border-radius:12px;background:#eff6ff;overflow:hidden}
+.cppt-soap>summary{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;font-weight:800;color:#1d4ed8;list-style:none}
+.cppt-soap>summary::-webkit-details-marker{display:none}
+.cppt-soap>summary::after{content:"▾";margin-left:auto;transition:transform .15s}
+.cppt-soap[open]>summary::after{transform:rotate(180deg)}
+.cppt-a{font-weight:600;color:#475569;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}
+.cppt-soap .output-box{margin:0 12px 10px}
+.cppt-soap>button{margin:0 12px 12px}
