@@ -1,4 +1,4 @@
-# RuangInap
+# SOAPin
 
 Clinical workspace offline-first untuk visite dan SOAP rawat inap. Data tersimpan di perangkat (IndexedDB), tanpa server.
 

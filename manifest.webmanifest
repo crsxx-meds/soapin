@@ -1,6 +1,6 @@
 {
-  "name": "RuangInap",
-  "short_name": "RuangInap",
+  "name": "SOAPin",
+  "short_name": "SOAPin",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#f6f8fb",

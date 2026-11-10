@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#2563eb">
+  <script>try{var t=localStorage.getItem("soapin-theme");if(t!=="dark"&&t!=="light")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.dataset.theme=t}catch(e){}</script>
   <meta name="description" content="Clinical workspace offline-first untuk visite dan SOAP rawat inap.">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
@@ -12,22 +13,22 @@
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/visual.css">
   <link rel="stylesheet" href="css/theme.css">
-  <title>RuangInap</title>
+  <title>SOAPin</title>
 </head>
 <body>
   <div id="app" class="app-shell">
     <header class="topbar">
-      <a class="brand-wrap brand-link" href="#" aria-label="RuangInap">
+      <a class="brand-wrap brand-link" href="#" aria-label="SOAPin">
         <img
           class="brand-logo"
           src="assets/logo.svg"
-          alt="RuangInap"
+          alt="SOAPin"
           width="150"
           height="42"
         >
       </a>
-      <button id="profileBtn" class="profile-button" type="button" aria-label="Profil kerja"><span class="profile-avatar">DR</span><span class="profile-meta"><strong id="profileDoctorLabel">Profil kerja</strong><small id="profileUnitLabel">Atur profil</small></span><span aria-hidden="true">⌄</span></button>
-    </header>
+      <div class="top-actions"><button id="themeBtn" class="icon-btn theme-btn" type="button" aria-label="Ganti tema">☾</button><button id="profileBtn" class="profile-button" type="button" aria-label="Profil kerja"><span class="profile-avatar">DR</span><span class="profile-meta"><strong id="profileDoctorLabel">Profil kerja</strong><small id="profileUnitLabel">Atur profil</small></span><span aria-hidden="true">⌄</span></button>
+    </div></header>
 
     <main>
       <section id="patientsView" class="view active-view">
@@ -65,7 +66,7 @@
           <div class="back-title">
             <button id="backToPatients" class="icon-btn">←</button>
             <div>
-              <p class="eyebrow">Visite</p>
+              <p class="eyebrow" id="formEyebrow">SOAP awal</p>
               <h1 id="formTitle">Pasien Baru</h1>
             </div>
           </div>
@@ -154,6 +155,12 @@
             <div class="field"><label for="diagnosis">Diagnosis utama <span>*</span></label><textarea id="diagnosis" rows="2"></textarea></div>
           </section>
 
+          <section id="cpptDateWrap" class="form-section cppt-date-box" hidden>
+            <div class="section-heading"><h2>Tanggal CPPT</h2></div>
+            <div class="field"><label for="cpptDate">Tanggal catatan</label><input id="cpptDate" type="date"></div>
+            <p class="helper" id="cpptInfo"></p>
+          </section>
+
           <section class="form-section" data-soap="s">
             <div class="section-heading"><h2>S — Subjective</h2></div>
             <div class="field"><textarea id="subjective" rows="4" placeholder="Keluhan hari ini, perkembangan sejak kemarin, dll."></textarea></div>
@@ -209,6 +216,7 @@
                   <div class="field"><label for="labHt">Ht (%)</label><input id="labHt" type="number" step="0.1" inputmode="decimal"></div>
                   <div class="field"><label for="labLeu">Leukosit (/µL)</label><input id="labLeu" type="number" inputmode="numeric"></div>
                   <div class="field"><label for="labPlt">Trombosit (/µL)</label><input id="labPlt" type="number" inputmode="numeric"></div>
+                  <div class="field"><label for="labNeu">Neutrofil (%)</label><input id="labNeu" type="number" step="0.1" inputmode="decimal"></div>
                 </div>
 
                 <div class="pn-label">Kimia darah</div>
@@ -219,6 +227,13 @@
                   <div class="field"><label for="labAlb">Albumin (g/dL)</label><input id="labAlb" type="number" step="0.1" inputmode="decimal"></div>
                   <div class="field"><label for="labSgot">SGOT (U/L)</label><input id="labSgot" type="number" inputmode="numeric"></div>
                   <div class="field"><label for="labSgpt">SGPT (U/L)</label><input id="labSgpt" type="number" inputmode="numeric"></div>
+                </div>
+
+                <div class="pn-label">Koagulasi</div>
+                <div class="pn-grid pn-grid-3">
+                  <div class="field"><label for="labPt">PT (detik)</label><input id="labPt" type="number" step="0.1" inputmode="decimal"></div>
+                  <div class="field"><label for="labAptt">aPTT (detik)</label><input id="labAptt" type="number" step="0.1" inputmode="decimal"></div>
+                  <div class="field"><label for="labInr">INR</label><input id="labInr" type="number" step="0.01" inputmode="decimal"></div>
                 </div>
 
                 <div class="pn-label">Elektrolit (mEq/L)</div>
@@ -265,7 +280,7 @@
             </div>
           </section>
 
-          <label class="visite-check"><input id="saveVisite" type="checkbox" checked> Simpan ke riwayat visite hari ini</label>
+          <label id="saveVisiteLabel" class="visite-check"><input id="saveVisite" type="checkbox" checked> Simpan ke riwayat visite hari ini</label>
 
           <div class="form-save-bar"><button type="submit" id="savePatientBtn" class="primary-btn">Simpan pasien</button><button type="button" id="cancelFormBtn" class="secondary-btn">Batal</button></div>
         </form>
@@ -311,7 +326,7 @@
       <div class="sidebar-brand">
         <img
           src="assets/logo.svg"
-          alt="RuangInap"
+          alt="SOAPin"
           width="150"
           height="42"
         >
