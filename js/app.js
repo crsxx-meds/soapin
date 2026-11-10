@@ -1,3 +1,4 @@
+/* nama database tetap 'ruanginap' agar data lama tidak hilang */
 const DB_NAME='ruanginap', DB_VERSION=2, PEDIATRIC_MAX_YEARS=18;
 
 const DEFAULT_TEMPLATE=`SOAP Rawat Inap — [TANGGAL]
@@ -72,6 +73,7 @@ const state={
   dpjp:'all',
   patients:[],
   editingId:null,
+  formMode:'new',
   consultPatientId:null,
   consultDraft:[],
   detailId:null,
@@ -186,7 +188,8 @@ const LAB_MAP=[
   ['labHb','hb'],['labHt','ht'],['labLeu','leu'],['labPlt','plt'],
   ['labGds','gds'],['labUreum','ureum'],['labCr','cr'],
   ['labSgot','sgot'],['labSgpt','sgpt'],['labAlb','alb'],
-  ['labNa','na'],['labK','k'],['labCl','cl']
+  ['labNa','na'],['labK','k'],['labCl','cl'],
+  ['labNeu','neu'],['labPt','pt'],['labAptt','aptt'],['labInr','inr']
 ];
 
 const IMG_MAP=[
@@ -238,13 +241,15 @@ function labText(p){
   const lines=[
     grp([
       item('Hb','hb'),item('Ht','ht'),
-      item('Leu','leu',th),item('Trombosit','plt',th)
+      item('Leu','leu',th),item('Trombosit','plt',th),
+      item('Neutrofil','neu',v=>v+'%')
     ]),
     grp([
       item('GDS','gds'),item('Ureum','ureum'),item('Kreatinin','cr'),
       item('SGOT','sgot'),item('SGPT','sgpt'),item('Albumin','alb')
     ]),
     grp([item('Na','na'),item('K','k'),item('Cl','cl')]),
+    grp([item('PT','pt',v=>v+' dtk'),item('aPTT','aptt',v=>v+' dtk'),item('INR','inr')]),
     clean(l.other)
   ].filter(Boolean);
 
@@ -298,6 +303,7 @@ const EVENT_TITLES={
   assessment:'Assessment diperbarui',
   plan:'Terapi / plan diperbarui',
   lab:'Lab / penunjang diperbarui',
+  cppt:'CPPT',
   note:'Catatan'
 };
 
@@ -313,18 +319,23 @@ function cpptDayLabel(dateStr){
   }).format(new Date(dateStr+'T00:00:00'));
 }
 
+function isAwalVisite(v,p){
+  return v.kind?v.kind==='awal':v.date===p.admission?.date;
+}
+
 function cpptHtml(p){
   const today=localDate();
   const map=new Map();
 
   const get=d=>{
-    if(!map.has(d))map.set(d,{date:d,visite:null,events:[]});
+    if(!map.has(d))map.set(d,{date:d,visites:[],events:[]});
     return map.get(d);
   };
 
-  (p.visites||[]).forEach(v=>{get(v.date).visite=v;});
+  (p.visites||[]).forEach(v=>{get(v.date).visites.push(v);});
 
   (p.timeline||[]).forEach(e=>{
+    if(e.subtype==='cppt')return;
     get(localDate(new Date(e.at))).events.push(e);
   });
 
@@ -342,7 +353,7 @@ function cpptHtml(p){
     }).format(new Date(iso));
 
   const needToday=
-    p.status==='active'&&!map.get(today)?.visite;
+    p.status==='active'&&!map.get(today)?.visites.length;
 
   const todo=needToday
     ?`
@@ -354,9 +365,9 @@ function cpptHtml(p){
             <span class="cppt-today">Hari ini</span>
             ${hpOf(today)!=null?`<span class="hp-badge">HP ${hpOf(today)}</span>`:''}
           </div>
-          <p class="cppt-empty">Belum ada SOAP untuk hari ini.</p>
-          <button type="button" class="secondary-btn" id="cpptNewBtn">
-            Isi SOAP hari ini
+          <p class="cppt-empty">Belum ada CPPT untuk hari ini.</p>
+          <button type="button" class="primary-btn" id="cpptNewBtn">
+            ＋ Isi CPPT hari ini
           </button>
         </div>
       </div>
@@ -365,7 +376,6 @@ function cpptHtml(p){
 
   const items=days.map(d=>{
     const hp=hpOf(d.date);
-    const v=d.visite;
     const isToday=d.date===today;
 
     const events=d.events
@@ -380,26 +390,35 @@ function cpptHtml(p){
       `)
       .join('');
 
-    const soap=v
-      ?`
-        <details class="cppt-soap">
-          <summary>
-            <span>SOAP</span>
-            ${v.a?`<span class="cppt-a">A: ${esc(v.a)}</span>`:''}
-          </summary>
-          <pre class="output-box">${esc(v.text)}</pre>
-          <button
-            type="button"
-            class="secondary-btn"
-            data-visite-copy="${v.id}">
-            Copy SOAP
-          </button>
-        </details>
-      `
-      :'';
+    const soap=d.visites
+      .slice()
+      .sort((a,b)=>
+        (isAwalVisite(b,p)-isAwalVisite(a,p))||
+        new Date(a.at)-new Date(b.at)
+      )
+      .map(v=>{
+        const awal=isAwalVisite(v,p);
+
+        return`
+          <details class="cppt-soap ${awal?'is-awal':''}">
+            <summary>
+              <span class="cppt-kind">${awal?'SOAP awal':'CPPT'}</span>
+              ${v.a?`<span class="cppt-a">A: ${esc(v.a)}</span>`:''}
+            </summary>
+            <pre class="output-box">${esc(v.text)}</pre>
+            <button
+              type="button"
+              class="secondary-btn"
+              data-visite-copy="${v.id}">
+              Copy ${awal?'SOAP awal':'CPPT'}
+            </button>
+          </details>
+        `;
+      })
+      .join('');
 
     return`
-      <div class="cppt-item ${v?'has-soap':''} ${isToday?'is-today':''}">
+      <div class="cppt-item ${d.visites.length?'has-soap':''} ${isToday?'is-today':''}">
         <span class="cppt-dot"></span>
         <div class="cppt-body">
           <div class="cppt-head">
@@ -414,18 +433,18 @@ function cpptHtml(p){
     `;
   }).join('');
 
-  const nSoap=days.filter(d=>d.visite).length;
+  const n=(p.visites||[]).length;
 
   return`
     <section class="detail-section cppt-section">
       <div class="row-between">
-        <h2>CPPT</h2>
-        <span class="cppt-count">${nSoap} SOAP tersimpan</span>
+        <h2>Perkembangan harian (CPPT)</h2>
+        <span class="cppt-count">${n} catatan</span>
       </div>
       <div class="cppt">
         ${
           todo+items||
-          '<div class="empty">Belum ada catatan. Simpan pasien dengan centang “Simpan ke riwayat visite”.</div>'
+          '<div class="empty">Belum ada catatan.</div>'
         }
       </div>
     </section>
@@ -1105,7 +1124,8 @@ function fillForm(p){
 
   fillPenunjang(p);
 
-  $('saveVisite').checked=true;
+  $('saveVisite').checked=
+    !!(p.visites||[]).find(v=>v.date===localDate());
 
   updatePediatricFields();
   updatePreview();
@@ -1660,8 +1680,71 @@ function showView(name){
   });
 }
 
+function applyFormMode(){
+  const m=state.formMode;
+
+  $('formView').classList.toggle('cppt-mode',m==='cppt');
+  $('cpptDateWrap').hidden=m!=='cppt';
+  $('saveVisiteLabel').hidden=m==='cppt';
+  $('savePatientBtn').textContent=
+    m==='cppt'?'Simpan CPPT':'Simpan pasien';
+  $('formEyebrow').textContent=
+    m==='cppt'?'CPPT harian':
+    m==='edit'?'Edit data':'SOAP awal';
+}
+
+function updateCpptInfo(){
+  const p=state.patients.find(x=>x.id===state.editingId);
+
+  if(!p)return;
+
+  const d=$('cpptDate').value||localDate();
+
+  const hp=
+    p.admission?.date
+      ?Math.max(1,daysBetween(p.admission.date,d)+1)
+      :null;
+
+  $('formTitle').textContent=
+    `CPPT${hp!=null?` · HP ${hp}`:''} — ${p.patient.name}`;
+
+  $('cpptInfo').textContent=
+    'S, TTV, balance cairan, lab, dan imaging dikosongkan untuk diisi hari ini. '+
+    'Pemeriksaan fisik, Assessment, dan Plan terisi dari catatan terakhir — ubah seperlunya. '+
+    'SOAP awal tetap tersimpan di timeline.';
+}
+
+function openCppt(id){
+  const p=state.patients.find(x=>x.id===id);
+
+  if(!p)return;
+
+  state.editingId=id;
+  state.formMode='cppt';
+
+  fillForm(p);
+
+  [
+    'subjective','gcsE','gcsV','gcsM',
+    'sbp','dbp','hr','rr','temperature','spo2',
+    'fluidIn','fluidUrine','fluidOther'
+  ].forEach(i=>{$(i).value='';});
+
+  fillPenunjang(null);
+
+  $('cpptDate').value=localDate();
+  $('saveVisite').checked=true;
+
+  updateCpptInfo();
+  applyFormMode();
+  updatePreview();
+
+  showView('form');
+}
+
 function openNew(){
   state.editingId=null;
+  state.formMode='new';
 
   $('patientForm').reset();
   $('patientId').value='';
@@ -1701,6 +1784,7 @@ function openNew(){
     'akral hangat, CRT <2s';
 
   updatePediatricFields();
+  applyFormMode();
   updatePreview();
 
   showView('form');
@@ -1715,8 +1799,10 @@ function openEdit(id){
   if(!p)return;
 
   state.editingId=id;
+  state.formMode='edit';
 
   fillForm(p);
+  applyFormMode();
   showView('form');
 }
 
@@ -1747,18 +1833,57 @@ async function saveForm(){
     return;
   }
 
-  if($('saveVisite').checked){
-    p.visites=(p.visites||[])
-      .filter(v=>v.date!==localDate());
+  const mode=state.formMode;
+
+  const visDate=
+    mode==='cppt'
+      ?($('cpptDate').value||localDate())
+      :localDate();
+
+  if(mode==='cppt'||$('saveVisite').checked){
+    const list=p.visites||[];
+
+    let kind;
+
+    if(!existing||mode==='new')kind='awal';
+    else if(mode==='cppt')kind='cppt';
+    else{
+      const o=list.find(v=>v.date===visDate);
+      kind=o&&isAwalVisite(o,p)?'awal':'cppt';
+    }
+
+    p.visites=list.filter(
+      v=>!(
+        v.date===visDate&&
+        (isAwalVisite(v,p)?'awal':'cppt')===kind
+      )
+    );
+
+    const hp=
+      p.admission.date
+        ?Math.max(1,daysBetween(p.admission.date,visDate)+1)
+        :hariRawat(p);
 
     p.visites.push({
       id:crypto.randomUUID(),
-      date:localDate(),
+      date:visDate,
       at:now(),
-      hp:hariRawat(p),
+      hp,
+      kind,
       a:assessmentText(p).split('\n')[0]||'',
       text:soapPlain(p)
     });
+
+    if(mode==='cppt'){
+      p.timeline=p.timeline||[];
+      p.timeline.push({
+        id:crypto.randomUUID(),
+        type:'update',
+        subtype:'cppt',
+        at:now(),
+        summary:`CPPT HP ${hp}`
+      });
+    }
   }
 
   if(
@@ -1777,12 +1902,15 @@ async function saveForm(){
   await refreshPatients();
 
   toast(
-    existing
-      ?'Pasien diperbarui'
-      :'Pasien disimpan'
+    mode==='cppt'
+      ?'CPPT disimpan'
+      :existing
+        ?'Pasien diperbarui'
+        :'Pasien disimpan'
   );
 
-  showView('patients');
+  if(mode==='cppt')openDetail(p.id);
+  else showView('patients');
 }
 
 function consultSummary(p){
@@ -2056,9 +2184,7 @@ function renderList(){
               </div>
             </div>
 
-            <span class="pc-status ${done?'is-done':'is-active'}">
-              ${done?'Pulang':'Dirawat'}
-            </span>
+            ${done?'<span class="pc-status is-done">Pulang</span>':''}
 
           </div>
 
@@ -2097,11 +2223,11 @@ function renderList(){
                 done
                   ?`
                     <button class="secondary-btn" data-action="edit" data-id="${p.id}">Buka</button>
-                    <button class="secondary-btn" data-action="copy" data-id="${p.id}">Copy SOAP</button>
+                    <button class="secondary-btn" data-action="copy" data-id="${p.id}">Copy</button>
                   `
                   :`
-                    <button class="secondary-btn" data-action="copy" data-id="${p.id}">Copy SOAP</button>
-                    <button class="secondary-btn" data-action="consult" data-id="${p.id}">+ Konsul</button>
+                    <button class="secondary-btn" data-action="copy" data-id="${p.id}">Copy</button>
+                    <button class="secondary-btn" data-action="consult" data-id="${p.id}">Konsul</button>
                     <button class="primary-btn" data-action="done" data-id="${p.id}">KRS</button>
                   `
               }
@@ -3057,7 +3183,7 @@ function renderDetail(p){
       <button
         class="secondary-btn"
         id="detailUpdateBtn">
-        ＋ Update
+        ＋ CPPT
       </button>
 
       <button
@@ -3274,10 +3400,10 @@ function renderDetail(p){
 
   `;
 
-  $('cpptNewBtn')?.addEventListener('click',()=>openEdit(p.id));
+  $('cpptNewBtn')?.addEventListener('click',()=>openCppt(p.id));
 
   $('detailUpdateBtn').onclick=
-    ()=>openUpdate(p.id);
+    ()=>openCppt(p.id);
 
   $('detailEditBtn').onclick=
     ()=>openEdit(p.id);
@@ -4651,7 +4777,7 @@ function exportData(){
         URL.createObjectURL(blob);
 
       a.download=
-        `ruanginap-backup-${
+        `soapin-backup-${
           new Date()
             .toISOString()
             .slice(0,10)
@@ -4734,6 +4860,37 @@ function toast(msg){
     );
 }
 
+/* ---------- Tema terang / gelap ---------- */
+function applyTheme(t){
+  document.documentElement.dataset.theme=t;
+
+  const meta=document.querySelector('meta[name="theme-color"]');
+  if(meta)meta.content=t==='dark'?'#0f172a':'#2563eb';
+
+  const b=$('themeBtn');
+  if(b){
+    b.textContent=t==='dark'?'☀':'☾';
+    b.setAttribute(
+      'aria-label',
+      t==='dark'?'Ganti ke mode terang':'Ganti ke mode gelap'
+    );
+  }
+}
+
+function initTheme(){
+  let t=null;
+  try{t=localStorage.getItem('soapin-theme');}catch{}
+  if(t!=='dark'&&t!=='light')
+    t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+  applyTheme(t);
+}
+
+function toggleTheme(){
+  const t=document.documentElement.dataset.theme==='dark'?'light':'dark';
+  applyTheme(t);
+  try{localStorage.setItem('soapin-theme',t);}catch{}
+}
+
 function bind(){
 
   $('newPatientBtn').onclick=
@@ -4790,6 +4947,14 @@ function bind(){
 
   $('patientSearch').oninput=
     renderList;
+
+  initTheme();
+  $('themeBtn').onclick=toggleTheme;
+
+  $('cpptDate').addEventListener('change',()=>{
+    updateCpptInfo();
+    updatePreview();
+  });
 
   $('dpjpFilter').onchange=
     ()=>{

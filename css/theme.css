@@ -1,5 +1,5 @@
 /* =========================================================
-   RUANGINAP — THEME LAYER
+   SOAPIN — THEME LAYER
    Dimuat terakhir. Mengubah palet menjadi lebih berwarna
    tanpa menyentuh visual.css. Ubah warna cukup di :root.
    ========================================================= */
@@ -441,3 +441,39 @@
 .cppt-a{font-weight:600;color:#475569;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}
 .cppt-soap .output-box{margin:0 12px 10px}
 .cppt-soap>button{margin:0 12px 12px}
+
+/* ===== v5: top actions + tombol tema ===== */
+.top-actions{display:flex;align-items:center;gap:8px}
+.theme-btn{width:42px;height:42px;font-size:20px;line-height:1;border-radius:12px;color:#334155}
+
+/* ===== v5: mode gelap =====
+   Seluruh warna di CSS lama di-hardcode, jadi mode gelap memakai
+   inversi lembut + hue-rotate (warna aksen tetap terbaca sama). */
+html[data-theme="dark"]{filter:invert(.92) hue-rotate(180deg);background:#fff;color-scheme:dark}
+html[data-theme="dark"] .toast{box-shadow:0 0 0 1px #fff3}
+
+/* ===== v5: kartu pasien seperti flash card ===== */
+#patientsView #patientList{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr))!important;gap:12px!important;align-items:stretch}
+#patientsView #patientList>.ward-group-head,#patientsView #patientList>.empty{grid-column:1/-1;margin:0}
+#patientsView #patientList>.ward-group-head{margin-top:6px}
+#patientsView #patientList .pcard{display:flex;flex-direction:column;margin:0;min-height:236px;padding:14px;border-radius:18px}
+#patientsView #patientList .pcard .pc-foot{margin-top:auto;padding-top:10px}
+.pc-dx-text{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.pc-name{font-size:19px}
+.pc-actions{display:flex;gap:6px}
+.pc-actions button{flex:1;padding:0 6px;min-width:0;white-space:nowrap}
+.pc-times{font-size:11px}
+
+/* ===== v5: CPPT / SOAP awal ===== */
+.cppt-kind{font-weight:800}
+.cppt-soap.is-awal{border-color:#bbf7d0;background:#f0fdf4}
+.cppt-soap.is-awal>summary{color:#166534}
+.cppt-soap+.cppt-soap{margin-top:6px}
+.cppt-date-box{border:2px solid #bfdbfe;background:#eff6ff}
+#formView.cppt-mode [data-soap="id"],#formView.cppt-mode [data-soap="dx"]{display:none}
+#cpptNewBtn{margin-top:2px}
+
+#patientsView #patientList .pc-name{overflow-wrap:break-word;word-break:normal;hyphens:auto}
+#patientsView #patientList .pc-bed{min-width:46px;font-size:17px}
+#patientsView #patientList .pc-tags{margin-bottom:10px}
+.cppt-soap .output-box{max-height:none;overflow:visible}
