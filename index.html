@@ -52,6 +52,11 @@
 
         <div id="wardFilter" class="ward-filter"></div>
 
+        <div id="dpjpFilterWrap" class="dpjp-filter" hidden>
+          <label for="dpjpFilter">DPJP</label>
+          <select id="dpjpFilter" aria-label="Filter DPJP"></select>
+        </div>
+
         <div id="patientList" class="patient-list"></div>
       </section>
 
@@ -133,7 +138,8 @@
 
               <div class="field">
                 <label for="dpjp">DPJP</label>
-                <input id="dpjp" autocomplete="off" placeholder="Nama DPJP">
+                <input id="dpjp" list="dpjpOptions" autocomplete="off" placeholder="Nama DPJP">
+                <datalist id="dpjpOptions"></datalist>
               </div>
 
               <div class="field">
@@ -189,6 +195,52 @@
               <div class="field"><label for="extremityExam">Ekstremitas</label><input id="extremityExam" value="akral hangat, CRT <2s"></div>
               <div class="field full"><label for="otherExam">Lainnya</label><textarea id="otherExam" rows="2"></textarea></div>
             </div>
+
+            <div class="subheading">Pemeriksaan penunjang <span class="subheading-note">(opsional)</span></div>
+
+            <details id="labDetails" class="pn-group">
+              <summary><span class="pn-title">Laboratorium</span><span class="pn-hint">Darah lengkap, kimia, elektrolit</span></summary>
+              <div class="pn-body">
+                <div class="field pn-date"><label for="labDate">Tanggal sampel</label><input id="labDate" type="date"></div>
+
+                <div class="pn-label">Darah lengkap</div>
+                <div class="pn-grid">
+                  <div class="field"><label for="labHb">Hb (g/dL)</label><input id="labHb" type="number" step="0.1" inputmode="decimal"></div>
+                  <div class="field"><label for="labHt">Ht (%)</label><input id="labHt" type="number" step="0.1" inputmode="decimal"></div>
+                  <div class="field"><label for="labLeu">Leukosit (/µL)</label><input id="labLeu" type="number" inputmode="numeric"></div>
+                  <div class="field"><label for="labPlt">Trombosit (/µL)</label><input id="labPlt" type="number" inputmode="numeric"></div>
+                </div>
+
+                <div class="pn-label">Kimia darah</div>
+                <div class="pn-grid">
+                  <div class="field"><label for="labGds">GDS (mg/dL)</label><input id="labGds" type="number" inputmode="numeric"></div>
+                  <div class="field"><label for="labUreum">Ureum (mg/dL)</label><input id="labUreum" type="number" step="0.1" inputmode="decimal"></div>
+                  <div class="field"><label for="labCr">Kreatinin (mg/dL)</label><input id="labCr" type="number" step="0.01" inputmode="decimal"></div>
+                  <div class="field"><label for="labAlb">Albumin (g/dL)</label><input id="labAlb" type="number" step="0.1" inputmode="decimal"></div>
+                  <div class="field"><label for="labSgot">SGOT (U/L)</label><input id="labSgot" type="number" inputmode="numeric"></div>
+                  <div class="field"><label for="labSgpt">SGPT (U/L)</label><input id="labSgpt" type="number" inputmode="numeric"></div>
+                </div>
+
+                <div class="pn-label">Elektrolit (mEq/L)</div>
+                <div class="pn-grid pn-grid-3">
+                  <div class="field"><label for="labNa">Na</label><input id="labNa" type="number" step="0.1" inputmode="decimal"></div>
+                  <div class="field"><label for="labK">K</label><input id="labK" type="number" step="0.1" inputmode="decimal"></div>
+                  <div class="field"><label for="labCl">Cl</label><input id="labCl" type="number" step="0.1" inputmode="decimal"></div>
+                </div>
+
+                <div class="field pn-other"><label for="labOther">Lab lainnya</label><textarea id="labOther" rows="2" placeholder="mis. CRP 48, PCT 0,5, AGDA, urinalisis, kultur"></textarea></div>
+              </div>
+            </details>
+
+            <details id="imgDetails" class="pn-group">
+              <summary><span class="pn-title">Imaging &amp; penunjang lain</span><span class="pn-hint">Foto thorax, CT scan, USG</span></summary>
+              <div class="pn-body">
+                <div class="field"><label for="imgThorax">Foto thorax</label><textarea id="imgThorax" rows="2" placeholder="mis. infiltrat paru kanan, cor tidak membesar"></textarea></div>
+                <div class="field"><label for="imgCt">CT scan</label><textarea id="imgCt" rows="2" placeholder="Region dan kesan"></textarea></div>
+                <div class="field"><label for="imgUsg">USG</label><textarea id="imgUsg" rows="2" placeholder="mis. USG abdomen: ..."></textarea></div>
+                <div class="field"><label for="imgOther">Lainnya (EKG, dll.)</label><textarea id="imgOther" rows="2"></textarea></div>
+              </div>
+            </details>
           </section>
 
           <section class="form-section" data-soap="a">

@@ -1,4 +1,4 @@
-const CACHE = 'ruanginap-v3';
+const CACHE = 'ruanginap-v4';
 const ASSETS = [
   './', './index.html',
   './css/base.css', './css/components.css', './css/visual.css', './css/theme.css',
