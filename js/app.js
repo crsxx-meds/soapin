@@ -23,6 +23,8 @@ O:
 
 [PHYSICAL_EXAM]
 
+[PENUNJANG_IF_AVAILABLE]
+
 A:
 [ASSESSMENT]
 
@@ -51,6 +53,8 @@ O:
 
 [PHYSICAL_EXAM]
 
+[PENUNJANG_IF_AVAILABLE]
+
 A:
 [ASSESSMENT]
 
@@ -65,6 +69,7 @@ const KONSUL_TEMPLATE_NAME='Konsultasi';
 const state={
   list:'active',
   ward:'all',
+  dpjp:'all',
   patients:[],
   editingId:null,
   consultPatientId:null,
@@ -176,12 +181,264 @@ function fluidText(p){
   return`${head} (${parts.join(', ')})`;
 }
 
+/* ---------- Penunjang (lab + imaging) ---------- */
+const LAB_MAP=[
+  ['labHb','hb'],['labHt','ht'],['labLeu','leu'],['labPlt','plt'],
+  ['labGds','gds'],['labUreum','ureum'],['labCr','cr'],
+  ['labSgot','sgot'],['labSgpt','sgpt'],['labAlb','alb'],
+  ['labNa','na'],['labK','k'],['labCl','cl']
+];
+
+const IMG_MAP=[
+  ['imgThorax','thorax'],['imgCt','ct'],['imgUsg','usg'],['imgOther','other']
+];
+
+function readPenunjang(){
+  const lab={
+    date:$('labDate').value||'',
+    other:clean($('labOther').value)
+  };
+
+  LAB_MAP.forEach(([id,k])=>{lab[k]=num($(id).value);});
+
+  const imaging={};
+
+  IMG_MAP.forEach(([id,k])=>{imaging[k]=clean($(id).value);});
+
+  return{lab,imaging};
+}
+
+function fillPenunjang(p){
+  const l=p?.objective?.lab||{};
+  const im=p?.objective?.imaging||{};
+
+  $('labDate').value=l.date||'';
+
+  LAB_MAP.forEach(([id,k])=>{$(id).value=l[k]??'';});
+
+  $('labOther').value=l.other||'';
+
+  IMG_MAP.forEach(([id,k])=>{$(id).value=im[k]||'';});
+
+  $('labDetails').open=
+    LAB_MAP.some(([,k])=>l[k]!=null)||!!clean(l.other);
+
+  $('imgDetails').open=
+    IMG_MAP.some(([,k])=>!!clean(im[k]));
+}
+
+function labText(p){
+  const l=p.objective?.lab||{};
+  const has=k=>l[k]!=null&&l[k]!=='';
+  const th=n=>Number(n).toLocaleString('id-ID');
+  const item=(label,k,fmt)=>
+    has(k)?`${label} ${fmt?fmt(l[k]):l[k]}`:'';
+  const grp=a=>a.filter(Boolean).join(', ');
+
+  const lines=[
+    grp([
+      item('Hb','hb'),item('Ht','ht'),
+      item('Leu','leu',th),item('Trombosit','plt',th)
+    ]),
+    grp([
+      item('GDS','gds'),item('Ureum','ureum'),item('Kreatinin','cr'),
+      item('SGOT','sgot'),item('SGPT','sgpt'),item('Albumin','alb')
+    ]),
+    grp([item('Na','na'),item('K','k'),item('Cl','cl')]),
+    clean(l.other)
+  ].filter(Boolean);
+
+  if(!lines.length)return'';
+
+  return[
+    `Lab${l.date?` (${formatDay(l.date)})`:''}:`,
+    ...lines
+  ].join('\n');
+}
+
+function imagingText(p){
+  const im=p.objective?.imaging||{};
+
+  return[
+    clean(im.thorax)&&`Foto thorax: ${clean(im.thorax)}`,
+    clean(im.ct)&&`CT scan: ${clean(im.ct)}`,
+    clean(im.usg)&&`USG: ${clean(im.usg)}`,
+    clean(im.other)
+  ].filter(Boolean).join('\n');
+}
+
+function penunjangText(p){
+  return[labText(p),imagingText(p)].filter(Boolean).join('\n');
+}
+
+/* ---------- DPJP ---------- */
+async function refreshDpjpList(){
+  const names=new Map();
+
+  state.patients.forEach(p=>{
+    const n=clean(p.admission?.dpjp);
+    if(n&&!names.has(n.toLowerCase()))names.set(n.toLowerCase(),n);
+  });
+
+  const dl=$('dpjpOptions');
+
+  if(dl)
+    dl.innerHTML=[...names.values()]
+      .sort((a,b)=>a.localeCompare(b,'id'))
+      .map(n=>`<option value="${esc(n)}"></option>`)
+      .join('');
+}
+
+/* ---------- CPPT timeline ---------- */
+const EVENT_TITLES={
+  created:'Pasien dibuat',
+  consultation:'Konsultasi',
+  completed:'KRS / Pulang',
+  vitals:'TTV diperbarui',
+  assessment:'Assessment diperbarui',
+  plan:'Terapi / plan diperbarui',
+  lab:'Lab / penunjang diperbarui',
+  note:'Catatan'
+};
+
+function eventTitle(e){
+  return e.type==='update'
+    ?(EVENT_TITLES[e.subtype]||'Update')
+    :(EVENT_TITLES[e.type]||'Update');
+}
+
+function cpptDayLabel(dateStr){
+  return new Intl.DateTimeFormat('id-ID',{
+    weekday:'long',day:'numeric',month:'short',year:'numeric'
+  }).format(new Date(dateStr+'T00:00:00'));
+}
+
+function cpptHtml(p){
+  const today=localDate();
+  const map=new Map();
+
+  const get=d=>{
+    if(!map.has(d))map.set(d,{date:d,visite:null,events:[]});
+    return map.get(d);
+  };
+
+  (p.visites||[]).forEach(v=>{get(v.date).visite=v;});
+
+  (p.timeline||[]).forEach(e=>{
+    get(localDate(new Date(e.at))).events.push(e);
+  });
+
+  const days=[...map.values()]
+    .sort((a,b)=>b.date.localeCompare(a.date));
+
+  const hpOf=d=>
+    p.admission?.date
+      ?Math.max(1,daysBetween(p.admission.date,d)+1)
+      :null;
+
+  const timeOf=iso=>
+    new Intl.DateTimeFormat('id-ID',{
+      hour:'2-digit',minute:'2-digit'
+    }).format(new Date(iso));
+
+  const needToday=
+    p.status==='active'&&!map.get(today)?.visite;
+
+  const todo=needToday
+    ?`
+      <div class="cppt-item cppt-todo">
+        <span class="cppt-dot"></span>
+        <div class="cppt-body">
+          <div class="cppt-head">
+            <span class="cppt-date">${esc(cpptDayLabel(today))}</span>
+            <span class="cppt-today">Hari ini</span>
+            ${hpOf(today)!=null?`<span class="hp-badge">HP ${hpOf(today)}</span>`:''}
+          </div>
+          <p class="cppt-empty">Belum ada SOAP untuk hari ini.</p>
+          <button type="button" class="secondary-btn" id="cpptNewBtn">
+            Isi SOAP hari ini
+          </button>
+        </div>
+      </div>
+    `
+    :'';
+
+  const items=days.map(d=>{
+    const hp=hpOf(d.date);
+    const v=d.visite;
+    const isToday=d.date===today;
+
+    const events=d.events
+      .slice()
+      .sort((a,b)=>new Date(a.at)-new Date(b.at))
+      .map(e=>`
+        <li class="ev-${esc(e.type==='update'?e.subtype:e.type)}">
+          <b>${esc(eventTitle(e))}</b>
+          <small>${esc(timeOf(e.at))}</small>
+          ${e.summary?`<span class="ev-sum">${esc(e.summary)}</span>`:''}
+        </li>
+      `)
+      .join('');
+
+    const soap=v
+      ?`
+        <details class="cppt-soap">
+          <summary>
+            <span>SOAP</span>
+            ${v.a?`<span class="cppt-a">A: ${esc(v.a)}</span>`:''}
+          </summary>
+          <pre class="output-box">${esc(v.text)}</pre>
+          <button
+            type="button"
+            class="secondary-btn"
+            data-visite-copy="${v.id}">
+            Copy SOAP
+          </button>
+        </details>
+      `
+      :'';
+
+    return`
+      <div class="cppt-item ${v?'has-soap':''} ${isToday?'is-today':''}">
+        <span class="cppt-dot"></span>
+        <div class="cppt-body">
+          <div class="cppt-head">
+            <span class="cppt-date">${esc(cpptDayLabel(d.date))}</span>
+            ${isToday?'<span class="cppt-today">Hari ini</span>':''}
+            ${hp!=null?`<span class="hp-badge">HP ${hp}</span>`:''}
+          </div>
+          ${events?`<ul class="cppt-events">${events}</ul>`:''}
+          ${soap}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const nSoap=days.filter(d=>d.visite).length;
+
+  return`
+    <section class="detail-section cppt-section">
+      <div class="row-between">
+        <h2>CPPT</h2>
+        <span class="cppt-count">${nSoap} SOAP tersimpan</span>
+      </div>
+      <div class="cppt">
+        ${
+          todo+items||
+          '<div class="empty">Belum ada catatan. Simpan pasien dengan centang “Simpan ke riwayat visite”.</div>'
+        }
+      </div>
+    </section>
+  `;
+}
+
 function soapPlain(p){
   const o=[
     gcsText(p),
     vitalsText(p),
     fluidText(p),
-    physicalText(p)
+    physicalText(p),
+    penunjangText(p)
   ].filter(Boolean);
 
   return[
@@ -220,6 +477,8 @@ async function refreshWardList(){
     dl.innerHTML=[...names]
       .map(n=>`<option value="${esc(n)}"></option>`)
       .join('');
+
+  await refreshDpjpList();
 }
 
 function openDB(){
@@ -498,6 +757,7 @@ async function renderTemplate(body,p){
   r('[GCS_IF_AVAILABLE]',gcsText(p));
   r('[VITALS]',vitalsText(p));
   r('[PHYSICAL_EXAM]',physicalText(p));
+  r('[PENUNJANG_IF_AVAILABLE]',penunjangText(p));
   r(
     '[ASSESSMENT]',
     assessmentText(p)
@@ -563,7 +823,8 @@ function sectionText(p,s){
       gcsText(p),
       vitalsText(p),
       fluidText(p),
-      physicalText(p)
+      physicalText(p),
+      penunjangText(p)
     ]
     .filter(Boolean)
     .join('\n');
@@ -624,6 +885,21 @@ function emptyPatient(){
         intake:null,
         urine:null,
         other:null
+      },
+
+      lab:{
+        date:'',
+        hb:null,ht:null,leu:null,plt:null,
+        gds:null,ureum:null,cr:null,sgot:null,sgpt:null,alb:null,
+        na:null,k:null,cl:null,
+        other:''
+      },
+
+      imaging:{
+        thorax:'',
+        ct:'',
+        usg:'',
+        other:''
       },
 
       physicalExam:{
@@ -736,6 +1012,11 @@ function readForm(existing){
     other:num($('fluidOther').value)
   };
 
+  const pn=readPenunjang();
+
+  p.objective.lab=pn.lab;
+  p.objective.imaging=pn.imaging;
+
   return p;
 }
 
@@ -821,6 +1102,8 @@ function fillForm(p){
   $('fluidIn').value=fl.intake??'';
   $('fluidUrine').value=fl.urine??'';
   $('fluidOther').value=fl.other??'';
+
+  fillPenunjang(p);
 
   $('saveVisite').checked=true;
 
@@ -1396,6 +1679,8 @@ function openNew(){
 
   $('saveVisite').checked=true;
 
+  fillPenunjang(null);
+
   $('oxygen').value=
     'Room air';
 
@@ -1471,6 +1756,7 @@ async function saveForm(){
       date:localDate(),
       at:now(),
       hp:hariRawat(p),
+      a:assessmentText(p).split('\n')[0]||'',
       text:soapPlain(p)
     });
   }
@@ -1536,37 +1822,90 @@ function renderList(){
       {numeric:true}
     );
 
-  const counts=new Map();
+  const dk=p=>clean(p.admission?.dpjp).toLowerCase();
+  const wk=p=>p.admission?.ward||'';
+
+  /* --- DPJP --- */
+  const dpjpNames=new Map();
 
   inStatus.forEach(p=>{
-    const w=p.admission?.ward||'';
-    counts.set(w,(counts.get(w)||0)+1);
+    if(!dpjpNames.has(dk(p)))
+      dpjpNames.set(dk(p),clean(p.admission?.dpjp));
   });
 
-  const wardNames=
-    [...counts.keys()].sort(cmp);
+  if(
+    state.dpjp!=='all'&&
+    (dpjpNames.size<2||!dpjpNames.has(state.dpjp))
+  )
+    state.dpjp='all';
+
+  const byDpjp=
+    inStatus.filter(
+      p=>state.dpjp==='all'||dk(p)===state.dpjp
+    );
+
+  /* --- ward --- */
+  const wardCounts=new Map();
+
+  byDpjp.forEach(p=>
+    wardCounts.set(wk(p),(wardCounts.get(wk(p))||0)+1)
+  );
 
   if(
     state.ward!=='all'&&
-    !counts.has(state.ward)
+    !wardCounts.has(state.ward)
   )
     state.ward='all';
+
+  const byWard=
+    inStatus.filter(
+      p=>state.ward==='all'||wk(p)===state.ward
+    );
+
+  const dpjpCounts=new Map();
+
+  byWard.forEach(p=>
+    dpjpCounts.set(dk(p),(dpjpCounts.get(dk(p))||0)+1)
+  );
+
+  const wardNames=
+    [...wardCounts.keys()].sort(cmp);
 
   $('wardFilter').innerHTML=
     wardNames.length>1
       ?[
-        `<button type="button" class="ward-chip ${state.ward==='all'?'active':''}" data-ward="all">Semua <b>${inStatus.length}</b></button>`,
+        `<button type="button" class="ward-chip ${state.ward==='all'?'active':''}" data-ward="all">Semua <b>${byDpjp.length}</b></button>`,
         ...wardNames.map(w=>
-          `<button type="button" class="ward-chip ${wardClass(w)} ${state.ward===w?'active':''}" data-ward="${esc(w)}">${esc(w||'Tanpa ruang')} <b>${counts.get(w)}</b></button>`
+          `<button type="button" class="ward-chip ${wardClass(w)} ${state.ward===w?'active':''}" data-ward="${esc(w)}">${esc(w||'Tanpa ruang')} <b>${wardCounts.get(w)}</b></button>`
         )
       ].join('')
       :'';
 
+  const dpjpKeys=
+    [...dpjpNames.keys()].sort(
+      (a,b)=>
+        (!a-!b)||
+        cmp(dpjpNames.get(a),dpjpNames.get(b))
+    );
+
+  $('dpjpFilterWrap').hidden=dpjpNames.size<2;
+
+  $('dpjpFilter').innerHTML=
+    [
+      `<option value="all">Semua DPJP (${byWard.length})</option>`,
+      ...dpjpKeys.map(k=>
+        `<option value="${esc(k)}">${esc(dpjpNames.get(k)||'Tanpa DPJP')} (${dpjpCounts.get(k)||0})</option>`
+      )
+    ].join('');
+
+  $('dpjpFilter').value=state.dpjp;
+
+  /* --- rows --- */
   let rows=
     inStatus.filter(
       p=>
-        state.ward==='all'||
-        (p.admission?.ward||'')===state.ward
+        (state.ward==='all'||wk(p)===state.ward)&&
+        (state.dpjp==='all'||dk(p)===state.dpjp)
     );
 
   rows.sort((a,b)=>{
@@ -1579,10 +1918,7 @@ function renderList(){
     }
 
     return(
-      cmp(
-        a.admission?.ward||'',
-        b.admission?.ward||''
-      )||
+      cmp(wk(a),wk(b))||
       cmp(
         a.admission?.bed||'',
         b.admission?.bed||''
@@ -1646,10 +1982,9 @@ function renderList(){
 
   const wardTotals=new Map();
 
-  rows.forEach(p=>{
-    const w=p.admission?.ward||'';
-    wardTotals.set(w,(wardTotals.get(w)||0)+1);
-  });
+  rows.forEach(p=>
+    wardTotals.set(wk(p),(wardTotals.get(wk(p))||0)+1)
+  );
 
   const group=
     status==='active'&&
@@ -1660,9 +1995,10 @@ function renderList(){
 
   c.innerHTML=
     rows.map(p=>{
-      const w=p.admission?.ward||'';
+      const w=wk(p);
       const hp=hariRawat(p);
       const bal=fluidBalance(p);
+      const done=p.status==='completed';
 
       const head=
         group&&w!==lastWard
@@ -1676,194 +2012,101 @@ function renderList(){
 
       lastWard=w;
 
+      const consult=
+        p.consultations?.length
+          ?`
+            <div class="pc-consult">
+              <span class="pc-consult-label">KONSUL</span>
+              ${p.consultations.map(c=>`
+                <span class="pc-chip ${c.contacted?'ok':'wait'}">
+                  ${c.contacted?'✓':'•'}
+                  ${esc(specialtyLabel(c.specialty))}
+                  ${c.adviceReceived?'<i>advice ✓</i>':''}
+                </span>
+              `).join('')}
+            </div>
+          `
+          :'';
+
       return`
         ${head}
         <article
-          class="patient-card ${wardClass(w)}"
+          class="pcard ${wardClass(w)}"
           data-open-patient="${p.id}">
 
-          <div class="patient-card-top">
+          <div class="pc-main">
 
-            <div class="patient-identity">
+            <div class="pc-bed">
+              ${esc(p.admission?.bed||'—')}
+              <small>BED</small>
+            </div>
 
-              <div class="patient-name">
-                ${esc(p.patient.name)}
-              </div>
-
-              <div class="patient-meta">
-                ${esc(ageText(p))}
-                ${
+            <div class="pc-id">
+              <h3 class="pc-name">${esc(p.patient.name)}</h3>
+              <div class="pc-meta">
+                ${esc(ageText(p))}${
                   p.patient.gender
                     ?` · ${esc(p.patient.gender)}`
                     :''
-                }
-                ${
+                }${
                   p.patient.weight!=null
                     ?` · BB ${esc(p.patient.weight)} kg`
                     :''
                 }
               </div>
-
-              <div class="patient-ward">
-                ${wardBadge(p)}
-                ${
-                  hp!=null
-                    ?`<span class="hp-badge">HP ${hp}</span>`
-                    :''
-                }
-                ${
-                  bal!=null
-                    ?`<span class="bal-badge ${bal<0?'neg':'pos'}">${bal>0?'+':''}${bal} mL</span>`
-                    :''
-                }
-              </div>
-
-              ${
-                p.admission?.dpjp
-                  ?`<div class="patient-dpjp">DPJP ${esc(p.admission.dpjp)}</div>`
-                  :''
-              }
-
             </div>
 
-            <span class="patient-status ${p.status==='completed'?'is-done':'is-active'}">
-              ${p.status==='completed'
-                ?'Pulang'
-                :'Dirawat'}
+            <span class="pc-status ${done?'is-done':'is-active'}">
+              ${done?'Pulang':'Dirawat'}
             </span>
 
           </div>
 
-          <div class="patient-diagnosis">
-            ${
-              p.diagnosis.length
-                ?esc(p.diagnosis.join(' • '))
-                :'<span class="muted">Belum ada diagnosis</span>'
-            }
+          <div class="pc-dx">
+            <span class="pc-dx-label">Dx</span>
+            <span class="pc-dx-text">
+              ${
+                p.diagnosis.length
+                  ?esc(p.diagnosis.join(' • '))
+                  :'<span class="muted">Belum ada diagnosis</span>'
+              }
+            </span>
           </div>
 
-          <div class="patient-consult">
+          <div class="pc-tags">
+            <span class="ward-badge ${wardClass(w)}">${esc(w||'Tanpa ruang')}</span>
+            ${hp!=null?`<span class="hp-badge">HP ${hp}</span>`:''}
+            ${bal!=null?`<span class="bal-badge ${bal<0?'neg':'pos'}">${bal>0?'+':''}${bal} mL</span>`:''}
+            ${p.admission?.dpjp?`<span class="dpjp-tag">${esc(p.admission.dpjp)}</span>`:''}
+          </div>
 
-            <div class="consult-label">
-              KONSULTASI
-            </div>
+          ${consult}
 
-            <div class="consult-status-list">
+          <div class="pc-foot">
 
+            <span class="pc-times">
+              MRS ${
+                p.admission?.date
+                  ?esc(formatDay(p.admission.date))
+                  :esc(formatDate(p.createdAt||p.updatedAt))
+              } · update ${esc(relativeTime(p.updatedAt))}
+            </span>
+
+            <div class="pc-actions">
               ${
-                p.consultations?.length
-                  ?p.consultations
-                    .map(c=>`
-                      <span
-                        class="consult-status ${
-                          c.contacted
-                            ?'is-contacted'
-                            :'is-pending'
-                        }">
-
-                        <span class="consult-icon">
-                          ${
-                            c.contacted
-                              ?'✓'
-                              :'•'
-                          }
-                        </span>
-
-                        ${esc(
-                          specialtyLabel(
-                            c.specialty
-                          )
-                        )}
-
-                        ${
-                          c.adviceReceived
-                            ?'<span class="advice-mark">· advice ✓</span>'
-                            :''
-                        }
-
-                      </span>
-                    `)
-                    .join('')
+                done
+                  ?`
+                    <button class="secondary-btn" data-action="edit" data-id="${p.id}">Buka</button>
+                    <button class="secondary-btn" data-action="copy" data-id="${p.id}">Copy SOAP</button>
+                  `
                   :`
-                    <span class="consult-empty">
-                      Belum ada konsultasi
-                    </span>
+                    <button class="secondary-btn" data-action="copy" data-id="${p.id}">Copy SOAP</button>
+                    <button class="secondary-btn" data-action="consult" data-id="${p.id}">+ Konsul</button>
+                    <button class="primary-btn" data-action="done" data-id="${p.id}">KRS</button>
                   `
               }
-
+              <button class="danger-btn" data-action="delete" data-id="${p.id}">Hapus</button>
             </div>
-
-          </div>
-
-          <div class="patient-card-bottom">
-
-            <div class="patient-time">
-              <span>MRS</span>
-              ${
-                p.admission?.date
-                  ?formatDay(p.admission.date)
-                  :formatDate(
-                    p.createdAt||p.updatedAt
-                  )
-              }
-            </div>
-
-            <div class="patient-time update-time">
-              <span>Update</span>
-              ${relativeTime(p.updatedAt)}
-            </div>
-
-          </div>
-
-          <div class="patient-card-actions">
-
-            ${
-              p.status==='completed'
-                ?`
-                  <button
-                    class="secondary-btn"
-                    data-action="edit"
-                    data-id="${p.id}">
-                    Buka
-                  </button>
-
-                  <button
-                    class="secondary-btn"
-                    data-action="copy"
-                    data-id="${p.id}">
-                    Copy SOAP
-                  </button>
-                `
-                :`
-                  <button
-                    class="secondary-btn"
-                    data-action="copy"
-                    data-id="${p.id}">
-                    Copy SOAP
-                  </button>
-
-                  <button
-                    class="secondary-btn"
-                    data-action="consult"
-                    data-id="${p.id}">
-                    + Konsul
-                  </button>
-
-                  <button
-                    class="primary-btn"
-                    data-action="done"
-                    data-id="${p.id}">
-                    KRS
-                  </button>
-                `
-            }
-
-            <button
-              class="danger-btn"
-              data-action="delete"
-              data-id="${p.id}">
-              Hapus
-            </button>
 
           </div>
 
@@ -2593,6 +2836,15 @@ async function saveUpdate(){
     summary
   });
 
+  const todayVisite=
+    (p.visites||[]).find(v=>v.date===localDate());
+
+  if(todayVisite){
+    todayVisite.text=soapPlain(p);
+    todayVisite.a=assessmentText(p).split('\n')[0]||'';
+    todayVisite.at=at;
+  }
+
   p.updatedAt=at;
 
   await dbPut('patients',p);
@@ -2742,79 +2994,7 @@ function renderDetail(p){
   .filter(Boolean)
   .join('');
 
-  const tl=
-    (p.timeline||[])
-      .slice()
-      .sort(
-        (a,b)=>
-          new Date(b.at)-
-          new Date(a.at)
-      )
-      .map(e=>{
-        const updateLabels={
-          vitals:'TTV diperbarui',
-          assessment:'Assessment diperbarui',
-          plan:'Terapi / plan diperbarui',
-          lab:'Lab / penunjang diperbarui',
-          note:'Catatan ditambahkan'
-        };
-
-        const title=
-          e.type==='consultation'
-            ?'Konsultasi'
-            :e.type==='completed'
-              ?'Selesai'
-              :e.type==='created'
-                ?'Pasien dibuat'
-                :updateLabels[e.subtype]||
-                  'Update';
-
-        return`
-          <div class="timeline-item">
-
-            <div class="timeline-dot"></div>
-
-            <div>
-
-              <strong>
-                ${esc(title)}
-              </strong>
-
-              <small>
-                ${formatDate(e.at)}
-              </small>
-
-              <p>
-                ${esc(e.summary||'')}
-              </p>
-
-            </div>
-
-          </div>
-        `;
-      })
-      .join('');
-
-  const visiteHtml=
-    (p.visites||[])
-      .slice()
-      .sort((a,b)=>new Date(b.at)-new Date(a.at))
-      .map(v=>`
-        <details class="visite-item">
-          <summary>
-            <span class="visite-date">${esc(formatDay(v.date))}</span>
-            ${v.hp!=null?`<span class="hp-badge">HP ${v.hp}</span>`:''}
-          </summary>
-          <pre class="output-box">${esc(v.text)}</pre>
-          <button
-            type="button"
-            class="secondary-btn"
-            data-visite-copy="${v.id}">
-            Copy visite
-          </button>
-        </details>
-      `)
-      .join('');
+  const cppt=cpptHtml(p);
 
   $('detailContent').innerHTML=`
 
@@ -3034,6 +3214,8 @@ function renderDetail(p){
 
     </section>
 
+    ${cppt}
+
     <section class="detail-section">
 
       <div class="row-between">
@@ -3090,42 +3272,9 @@ function renderDetail(p){
 
     </section>
 
-    <section class="detail-section">
-
-      <h2>
-        Riwayat Visite
-      </h2>
-
-      <div class="visite-list">
-        ${
-          visiteHtml||
-          '<div class="empty">Belum ada visite tersimpan. Centang “Simpan ke riwayat visite” saat menyimpan pasien.</div>'
-        }
-      </div>
-
-    </section>
-
-    <section class="detail-section">
-
-      <h2>
-        Timeline
-      </h2>
-
-      <div class="timeline">
-
-        ${
-          tl||
-          `
-            <div class="empty">
-              Belum ada event tambahan.
-            </div>
-          `
-        }
-
-      </div>
-
-    </section>
   `;
+
+  $('cpptNewBtn')?.addEventListener('click',()=>openEdit(p.id));
 
   $('detailUpdateBtn').onclick=
     ()=>openUpdate(p.id);
@@ -3990,6 +4139,20 @@ function fillToolsFromPatient(){
   set('cRnSex',p.patient.gender);
   set('cRnBb',p.patient.weight);
   set('cIbwSex',p.patient.gender);
+
+  const lab=p.objective.lab||{};
+
+  set('cRnScr',lab.cr);
+  set('cAgNa',lab.na);
+  set('cAgCl',lab.cl);
+  set('cAgAlb',lab.alb);
+  set('cNa',lab.na);
+  set('cGlucose',lab.gds);
+  set('cOsNa',lab.na);
+  set('cOsGlu',lab.gds);
+
+  if(lab.ureum!=null)
+    set('cOsBun',(lab.ureum/2.14).toFixed(1));
 }
 
 /* ---------- Rekap visite ---------- */
@@ -4122,6 +4285,21 @@ async function ensureDefaultTemplate(){
 
     list=
       await dbAll('templates');
+  }
+
+  for(const t of list){
+    if(
+      t.system&&
+      typeof t.body==='string'&&
+      t.body.includes('[PHYSICAL_EXAM]')&&
+      !t.body.includes('[PENUNJANG_IF_AVAILABLE]')
+    ){
+      t.body=t.body.replace(
+        '[PHYSICAL_EXAM]',
+        '[PHYSICAL_EXAM]\n\n[PENUNJANG_IF_AVAILABLE]'
+      );
+      await dbPut('templates',t);
+    }
   }
 
   state.activeTemplateId=
@@ -4265,7 +4443,8 @@ const fields=[
   '[TGL_MASUK]',
   '[DPJP_LINE]',
   '[DPJP]',
-  '[BALANCE_IF_AVAILABLE]'
+  '[BALANCE_IF_AVAILABLE]',
+  '[PENUNJANG_IF_AVAILABLE]'
 ];
 
 async function saveTemplate(){
@@ -4611,6 +4790,27 @@ function bind(){
 
   $('patientSearch').oninput=
     renderList;
+
+  $('dpjpFilter').onchange=
+    ()=>{
+      state.dpjp=$('dpjpFilter').value;
+      renderList();
+    };
+
+  document
+    .querySelectorAll(
+      '#labDetails input:not([type="date"]),#labDetails textarea'
+    )
+    .forEach(
+      el=>
+        el.addEventListener(
+          'input',
+          ()=>{
+            if(!$('labDate').value)
+              $('labDate').value=localDate();
+          }
+        )
+    );
 
   $('wardFilter').onclick=
     e=>{
