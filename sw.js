@@ -1,4 +1,4 @@
-const CACHE = 'soapin-v7';
+const CACHE = 'soapin-v8';
 const ASSETS = [
   './', './index.html',
   './css/base.css', './css/components.css', './css/visual.css', './css/theme.css',
