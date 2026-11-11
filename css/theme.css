@@ -484,4 +484,4 @@ html[data-theme="dark"] .toast{box-shadow:0 0 0 1px #fff3}
 
 /* v8: SOAP tampil penuh, tanpa kotak scroll/overlap */
 #detailView #detailSoapOut,
-#detailView .cppt-soap .output-box{max-height:none;overflow:visible;height:auto}
+#detailView .cppt-soap .output-box{max-height:none!important;overflow:visible!important;height:auto!important}

@@ -2,8 +2,6 @@
 
 Clinical workspace offline-first untuk visite dan SOAP rawat inap. Data tersimpan di perangkat (IndexedDB), tanpa server.
 
-Diadaptasi dari struktur ruangdokter.github.io (repo asalnya belum mencantumkan lisensi; minta izin atau beri atribusi bila dipublikasikan luas).
-
 ## Yang berbeda dari versi dasar
 - Data rawat inap per pasien: ruang, bed, tanggal MRS, DPJP, BB; hari rawat (HP) dihitung otomatis
 - Daftar dikelompokkan dan difilter per ruang, tiap ruang punya warna sendiri; pencarian mencakup ruang/bed/DPJP

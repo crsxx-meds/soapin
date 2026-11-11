@@ -1,4 +1,4 @@
-const CACHE = 'soapin-v8';
+const CACHE = 'soapin-v9';
 const ASSETS = [
   './', './index.html',
   './css/base.css', './css/components.css', './css/visual.css', './css/theme.css',
@@ -25,5 +25,5 @@ self.addEventListener('fetch', e => {
         caches.open(CACHE).then(c => c.put(e.request, copy));
         return res;
       })
-      .catch(() => caches.match(e.request).then(r => r || caches.match('./index.html'))));
+      .catch(() => caches.match(e.request, { ignoreSearch: true }).then(r => r || caches.match('./index.html'))));
 });
