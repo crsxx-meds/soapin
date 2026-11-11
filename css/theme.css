@@ -477,3 +477,9 @@ html[data-theme="dark"] .toast{box-shadow:0 0 0 1px #fff3}
 #patientsView #patientList .pc-bed{min-width:46px;font-size:17px}
 #patientsView #patientList .pc-tags{margin-bottom:10px}
 .cppt-soap .output-box{max-height:none;overflow:visible}
+
+/* ===== v7: format output di bagian SOAP ===== */
+.soap-format{display:flex;align-items:center;gap:10px;margin:0 0 10px}
+.soap-format label{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#64748b;white-space:nowrap}
+.soap-format select{flex:1;min-width:0}
+#detailSoapOut{max-height:none;overflow:visible}

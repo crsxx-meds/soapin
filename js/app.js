@@ -640,12 +640,16 @@ function gcsText(p){
   )?`GCS: E${g.e}V${g.v}M${g.m}`:'';
 }
 
-function vitalsText(p){
+function vitalsText(p,withMap=true){
   const v=p.objective.vitals;
   const lines=[];
 
-  if(v.sbp!=null&&v.dbp!=null)
+  if(v.sbp!=null&&v.dbp!=null){
     lines.push(`TD: ${v.sbp}/${v.dbp}`);
+
+    if(withMap)
+      lines.push(`MAP: ${mapOf(p)} mmHg`);
+  }
 
   if(v.hr!=null)
     lines.push(`HR: ${v.hr}`);
@@ -774,7 +778,7 @@ async function renderTemplate(body,p){
 
   r('[SUBJECTIVE]',p.subjective);
   r('[GCS_IF_AVAILABLE]',gcsText(p));
-  r('[VITALS]',vitalsText(p));
+  r('[VITALS]',vitalsText(p,!t.includes('[MAP_IF_AVAILABLE]')));
   r('[PHYSICAL_EXAM]',physicalText(p));
   r('[PENUNJANG_IF_AVAILABLE]',penunjangText(p));
   r(
@@ -3206,30 +3210,6 @@ function renderDetail(p){
 
     </div>
 
-    <div
-      class="detail-section template-choice">
-
-      <div class="row-between">
-
-        <div>
-          <p class="eyebrow">
-            Output
-          </p>
-
-          <h2>
-            Template konsultasi
-          </h2>
-        </div>
-
-        <select
-          id="detailTemplateSelect"
-          class="consult-select">
-        </select>
-
-      </div>
-
-    </div>
-
     <div class="snapshot">
 
       <div>
@@ -3296,14 +3276,22 @@ function renderDetail(p){
         </h2>
 
         <button
-          class="secondary-btn"
+          class="primary-btn"
           id="detailCopyAll">
           Copy All
         </button>
 
       </div>
 
-      <pre class="output-box">${esc(soapPlain(p))}</pre>
+      <div class="soap-format">
+        <label for="detailTemplateSelect">Format output</label>
+        <select
+          id="detailTemplateSelect"
+          class="consult-select">
+        </select>
+      </div>
+
+      <pre class="output-box" id="detailSoapOut">${esc(soapPlain(p))}</pre>
 
       <div
         class="copy-grid detail-copy-grid">
@@ -3472,6 +3460,12 @@ function renderDetail(p){
           p.id,
           ds.value
         );
+
+      buildConsultation(p,ds.value||null)
+        .then(t=>{
+          const out=$('detailSoapOut');
+          if(out&&state.detailId===p.id)out.textContent=t;
+        });
     });
 }
 
